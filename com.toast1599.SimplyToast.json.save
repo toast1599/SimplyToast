@@ -1,0 +1,36 @@
+{
+  "app-id": "com.toast1599.SimplyToast",
+  "runtime": "org.gnome.Platform",
+  "runtime-version": "45",
+  "sdk": "org.gnome.Sdk",
+  "command": "simplytoast",
+  "finish-args": [
+    "--share=network",
+    "--share=ipc",
+    "--socket=x11",
+    "--socket=wayland",
+    "--filesystem=home",
+    "--filesystem=/etc/xdg",
+    "--device=dri"
+  ],
+
+  "modules": [
+    {
+      "name": "simplytoast",
+      "buildsystem": "simple",
+      "build-commands": [
+        "install -D src/main.py /app/bin/simplytoast",
+        "install -D data/com.toast1599.SimplyToast.desktop /app/share/applications/com.toast1599.SimplyToast.desktop",
+        "cp -r data /app/share/simplytoast/data",
+        "install -D -t /app/share/applications data/simplytoast.desktop",
+        "install -D data/simplytoast.png /app/share/icons/hicolor/512x512/apps/com.toast1599.SimplyToast.png"
+      ],
+      "sources": [
+        {
+          "type": "dir",
+          "path": "."
+        }
+      ]
+    }
+  ]
+}

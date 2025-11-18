@@ -1,0 +1,41 @@
+# backup first
+cp com.toast1599.SimplyToast.json com.toast1599.SimplyToast.json.bak
+
+# overwrite with the corrected manifest
+cat > com.toast1599.SimplyToast.json <<'JSON'
+{
+  "app-id": "com.toast1599.SimplyToast",
+  "runtime": "org.gnome.Platform",
+  "runtime-version": "45",
+  "sdk": "org.gnome.Sdk",
+  "command": "simplytoast",
+  "finish-args": [
+    "--share=network",
+    "--share=ipc",
+    "--socket=x11",
+    "--socket=wayland",
+    "--filesystem=home",
+    "--filesystem=/etc/xdg",
+    "--device=dri"
+  ],
+  "modules": [
+    {
+      "name": "simplytoast",
+      "buildsystem": "simple",
+      "build-commands": [
+        "install -D src/main.py /app/bin/simplytoast",
+        "install -D -t /app/share/simplytoast/src src/*.py",
+        "cp -r data /app/share/simplytoast/data",
+        "install -D data/com.toast1599.SimplyToast.desktop /app/share/applications/com.toast1599.SimplyToast.desktop",
+        "install -D data/simplytoast.png /app/share/icons/hicolor/512x512/apps/com.toast1599.SimplyToast.png"
+      ],
+      "sources": [
+        {
+          "type": "dir",
+          "path": "."
+        }
+      ]
+    }
+  ]
+}
+JSON
