@@ -1,12 +1,8 @@
-<p align="center">
-  <img src="https://raw.githubusercontent.com/toast1599/SimplyToast/main/assets/logo.png" width="140" />
-</p>
-
-# SimplyToast  
-A clean, lightweight, and modern startup & background process manager for Linux.
+# SimplyToast <img align="right" src="https://raw.githubusercontent.com/toast1599/SimplyToast/main/assets/logo.png" width="120">
 
 Created and maintained by @toast1599  
 Licensed under GPL-3.0
+
 
 ---
 
