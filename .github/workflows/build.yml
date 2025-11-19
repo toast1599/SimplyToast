@@ -35,6 +35,8 @@ jobs:
           tar czf dist/SimplyToast-${VERSION}.tar.gz src assets data LICENSE README.md
 
       - name: Build DEB
+        env:
+          DEB_VERSION: ${{ github.ref_name }}
         run: |
           mkdir -p deb_build/usr/bin
           mkdir -p deb_build/usr/share/simplytoast
@@ -47,14 +49,15 @@ jobs:
           cp data/simplytoast.png deb_build/usr/share/icons/hicolor/512x512/apps/
 
           mkdir -p deb_build/DEBIAN
+          cat > deb_build/DEBIAN/control <<EOF
+Package: simplytoast
+Version: ${DEB_VERSION#v}
+Architecture: all
+Maintainer: toast1599
+Description: Startup application manager
+EOF
 
-          echo "Package: simplytoast" > deb_build/DEBIAN/control
-          echo "Version: ${VERSION}" >> deb_build/DEBIAN/control
-          echo "Architecture: all" >> deb_build/DEBIAN/control
-          echo "Maintainer: toast1599" >> deb_build/DEBIAN/control
-          echo "Description: Startup application manager" >> deb_build/DEBIAN/control
-
-          dpkg-deb --build deb_build dist/simplytoast_${VERSION}.deb
+          dpkg-deb --build deb_build dist/simplytoast_${DEB_VERSION#v}.deb
 
       - name: Download linuxdeploy
         run: |
@@ -90,7 +93,6 @@ jobs:
     name: Build Arch Package
     runs-on: ubuntu-latest
     needs: build-ubuntu
-
     container:
       image: archlinux:latest
 
@@ -120,7 +122,9 @@ jobs:
   release:
     name: Create GitHub Release
     runs-on: ubuntu-latest
-    needs: [build-ubuntu, build-arch]
+    needs:
+      - build-ubuntu
+      - build-arch
 
     steps:
       - name: Download Ubuntu artifacts
