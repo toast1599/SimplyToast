@@ -13,6 +13,8 @@ jobs:
   build-ubuntu:
     name: Build DEB / AppImage / Tarball
     runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ github.ref_name }}
 
     steps:
       - name: Checkout repo
@@ -30,8 +32,7 @@ jobs:
       - name: Build source tarball
         run: |
           mkdir -p dist
-          tar czf dist/SimplyToast-${GITHUB_REF_NAME#v}.tar.gz \
-            src assets data LICENSE README.md
+          tar czf dist/SimplyToast-${VERSION}.tar.gz src assets data LICENSE README.md
 
       - name: Build DEB
         run: |
@@ -46,15 +47,14 @@ jobs:
           cp data/simplytoast.png deb_build/usr/share/icons/hicolor/512x512/apps/
 
           mkdir -p deb_build/DEBIAN
-          cat <<EOF > deb_build/DEBIAN/control
-Package: simplytoast
-Version: ${GITHUB_REF_NAME#v}
-Architecture: all
-Maintainer: toast1599
-Description: Startup application manager
-EOF
 
-          dpkg-deb --build deb_build dist/simplytoast_${GITHUB_REF_NAME#v}.deb
+          echo "Package: simplytoast" > deb_build/DEBIAN/control
+          echo "Version: ${VERSION}" >> deb_build/DEBIAN/control
+          echo "Architecture: all" >> deb_build/DEBIAN/control
+          echo "Maintainer: toast1599" >> deb_build/DEBIAN/control
+          echo "Description: Startup application manager" >> deb_build/DEBIAN/control
+
+          dpkg-deb --build deb_build dist/simplytoast_${VERSION}.deb
 
       - name: Download linuxdeploy
         run: |
@@ -75,7 +75,7 @@ EOF
 
           ./linuxdeploy-x86_64.AppImage --appdir AppDir --output appimage
 
-          mv SimplyToast*.AppImage dist/SimplyToast-${GITHUB_REF_NAME#v}.AppImage
+          mv SimplyToast*.AppImage dist/SimplyToast-${VERSION}.AppImage
 
       - name: Upload Ubuntu artifacts
         uses: actions/upload-artifact@v4
@@ -84,7 +84,7 @@ EOF
           path: dist/
 
   # ===========================
-  # ARCH LINUX JOB
+  # ARCH PACKAGE JOB
   # ===========================
   build-arch:
     name: Build Arch Package
@@ -95,9 +95,9 @@ EOF
       image: archlinux:latest
 
     steps:
-      - name: Install tools
+      - name: Install pacman deps
         run: |
-          pacman -Sy --noconfirm base-devel git tar
+          pacman -Sy --noconfirm base-devel git tar xz
 
       - name: Checkout repo
         uses: actions/checkout@v3
@@ -123,8 +123,16 @@ EOF
     needs: [build-ubuntu, build-arch]
 
     steps:
-      - uses: actions/download-artifact@v4
+      - name: Download Ubuntu artifacts
+        uses: actions/download-artifact@v4
         with:
+          name: ubuntu-artifacts
+          path: dist
+
+      - name: Download Arch artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: arch-artifacts
           path: dist
 
       - name: Publish release
