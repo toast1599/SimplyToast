@@ -53,6 +53,7 @@ Latest release:
 👉 **https://github.com/toast1599/SimplyToast/releases**
 
 Available formats:
+- **.pkg.tar.zst** (Arch Linux, Manjaro, EndeavourOS)
 - **.deb** (Ubuntu, Debian, Linux Mint)
 - **.AppImage** (Most Linux distros)
 
