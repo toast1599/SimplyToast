@@ -2,7 +2,6 @@
 
 Created and maintained by @toast1599
 Licensed under GPL-3.0
-Discord: https://discord.gg/yX92vzqvwd
 
 ---
 
@@ -12,6 +11,7 @@ SimplyToast is a minimal, fast, and visually clean tool designed to give you ful
 - **Background processes**
 - **Resource impact analysis**
 - **Simple theme switching (Light / Mid / Dark)**
+- **Discord: https://discord.gg/yX92vzqvwd**
 
 No root. No bloat. Just practicality.
 
