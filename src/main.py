@@ -389,6 +389,41 @@ def toast_filter(data, text, columns):
 # MAIN WINDOW
 # ===========================
 
+class HelpWindow(Gtk.Window):
+    def __init__(self, parent):
+        super().__init__(title="Help & Support")
+        self.set_default_size(300, 200)
+        self.set_transient_for(parent)
+        self.set_modal(True)
+
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=15)
+        box.set_margin_top(20)
+        box.set_margin_bottom(20)
+        box.set_margin_left(20)
+        box.set_margin_right(20)
+        self.add(box)
+
+        lbl = Gtk.Label()
+        lbl.set_markup("<big><b>SimplyToast Support</b></big>")
+        box.pack_start(lbl, False, False, 0)
+
+        btn_discord = Gtk.Button(label="Join Discord Server")
+        btn_discord.connect("clicked", self.open_discord)
+        box.pack_start(btn_discord, False, False, 0)
+
+        btn_github = Gtk.Button(label="Open GitHub Repo")
+        btn_github.connect("clicked", self.open_github)
+        box.pack_start(btn_github, False, False, 0)
+
+    def open_discord(self, btn):
+        import webbrowser
+        webbrowser.open("https://discord.gg/yX92vzqvwd")
+
+    def open_github(self, btn):
+        import webbrowser
+        webbrowser.open("https://github.com/toast1599/SimplyToast")
+
+
 class ToastWindow(Gtk.Window):
     def __init__(self):
         super().__init__(title="SimplyToast")
@@ -410,18 +445,22 @@ class ToastWindow(Gtk.Window):
         menu = Gtk.Menu()
 
         item_new = Gtk.MenuItem(label="New Autostart Entry")
-        item_delete = Gtk.MenuItem(label="Delete Selected")
         item_edit = Gtk.MenuItem(label="Edit Selected")
+        item_delete = Gtk.MenuItem(label="Delete Selected")
+        item_help = Gtk.MenuItem(label="Help & Support")
 
         item_new.connect("activate", self.on_new_entry)
-        item_delete.connect("activate", self.on_delete_selected)
         item_edit.connect("activate", self.on_edit_selected)
+        item_delete.connect("activate", self.on_delete_selected)
+        item_help.connect("activate", self.on_help)
 
         menu.append(item_new)
-        menu.append(item_delete)
         menu.append(item_edit)
-        menu.show_all()
+        menu.append(item_delete)
+        menu.append(Gtk.SeparatorMenuItem())
+        menu.append(item_help)
 
+        menu.show_all()
         self.menu_button.set_popup(menu)
         hb.pack_start(self.menu_button)
 
@@ -678,7 +717,10 @@ class ToastWindow(Gtk.Window):
         save_settings(self.settings)
         apply_theme(self, new_theme)
 
-
+    def on_help(self, menuitem):
+        win = HelpWindow(self)
+        win.show_all()
+    
     def on_new_entry(self, menuitem):
         win = NewEntryWindow(self)
         win.show_all()
