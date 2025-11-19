@@ -49,13 +49,11 @@ jobs:
           cp data/simplytoast.png deb_build/usr/share/icons/hicolor/512x512/apps/
 
           mkdir -p deb_build/DEBIAN
-          cat << 'EOF' > deb_build/DEBIAN/control
-Package: simplytoast
-Version: ${DEB_VERSION#v}
-Architecture: all
-Maintainer: toast1599
-Description: Startup application manager
-EOF
+          echo "Package: simplytoast" > deb_build/DEBIAN/control
+          echo "Version: ${DEB_VERSION#v}" >> deb_build/DEBIAN/control
+          echo "Architecture: all" >> deb_build/DEBIAN/control
+          echo "Maintainer: toast1599" >> deb_build/DEBIAN/control
+          echo "Description: Startup application manager" >> deb_build/DEBIAN/control
 
           dpkg-deb --build deb_build dist/simplytoast_${DEB_VERSION#v}.deb
 
