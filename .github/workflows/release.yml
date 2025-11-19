@@ -1,0 +1,44 @@
+name: Build Packages
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build-arch:
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install deps
+        run: pacman -Sy --noconfirm base-devel python gtk4 python-gobject
+
+      - name: Build PKG
+        run: |
+          makepkg -fs --noconfirm
+          ls -l *.pkg.tar.zst
+
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: "*.pkg.tar.zst"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-deb:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build DEB
+        run: |
+          dpkg-deb --build deb_build simplytoast-${GITHUB_REF_NAME}.deb
+
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: "simplytoast-${{ github.ref_name }}.deb"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
