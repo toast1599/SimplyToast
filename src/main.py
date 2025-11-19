@@ -734,7 +734,9 @@ class ToastWindow(Gtk.Window):
         if not treeiter:
             return
 
-        name, enabled, filepath, source, icon, comment = model[treeiter]
+        values = list(model[treeiter]) + ["", ""]
+        name, enabled, filepath, source, icon, comment = values[:6]
+
 
         if source == "system":
             return
