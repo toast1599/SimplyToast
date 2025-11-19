@@ -49,7 +49,7 @@ jobs:
           cp data/simplytoast.png deb_build/usr/share/icons/hicolor/512x512/apps/
 
           mkdir -p deb_build/DEBIAN
-          cat > deb_build/DEBIAN/control <<EOF
+          cat << 'EOF' > deb_build/DEBIAN/control
 Package: simplytoast
 Version: ${DEB_VERSION#v}
 Architecture: all
