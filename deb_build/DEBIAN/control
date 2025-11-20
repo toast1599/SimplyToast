@@ -1,0 +1,5 @@
+Package: simplytoast
+Version: 0.9.9
+Architecture: all
+Maintainer: toast1599
+Description: Startup application manager

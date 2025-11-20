@@ -74,17 +74,17 @@ mv "$APPIMAGE_FILE" "dist/SimplyToast-$VERSION.AppImage"
 # -------------------------
 # Build Arch PKG in Docker
 # -------------------------
+
 echo "[4/4] Arch Linux PKG (inside Docker)..."
 
-# auto-update PKGBUILD version
-sed -i "s/^pkgver=.*/pkgver=$VERSION/" PKGBUILD
-sed -i "s/^source=.*/source=(\"SimplyToast-$VERSION.tar.gz\")/" PKGBUILD
-
-# prepare pkgbuild folder
 rm -rf pkgbuild
-mkdir pkgbuild
-cp PKGBUILD pkgbuild/
-cp dist/SimplyToast-$VERSION.tar.gz pkgbuild/
+mkdir -p "pkgbuild/SimplyToast-$VERSION"
+
+# copy PKGBUILD into version folder
+cp PKGBUILD "pkgbuild/SimplyToast-$VERSION/"
+
+# copy project files into versioned folder
+cp -r src assets data LICENSE README.md "pkgbuild/SimplyToast-$VERSION/"
 
 # run arch inside docker using NON-ROOT USER (builderr)
 docker run --rm -t \
@@ -95,16 +95,12 @@ docker run --rm -t \
 
         pacman -Sy --noconfirm base-devel git sudo
 
-        # create normal build user
         useradd -m builderr
         echo 'builderr ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
-
-        # fix perms so builderr can write to mounted folder
         chown -R builderr:builderr /work
 
-        # build as non-root user
         sudo -u builderr bash -c '
-            cd /work/pkgbuild
+            cd /work/pkgbuild/SimplyToast-$VERSION
             makepkg -fs --noconfirm
         '
     "

@@ -10,6 +10,8 @@ source=()
 sha256sums=()
 
 package() {
+    cd "SimplyToast-$pkgver"
+
     mkdir -p "$pkgdir/usr/bin"
     mkdir -p "$pkgdir/usr/share/simplytoast"
     mkdir -p "$pkgdir/usr/share/applications"

@@ -1,0 +1,9 @@
+#!/bin/bash
+HERE="$(dirname "$(readlink -f "$0")")"
+
+export XDG_DATA_DIRS="$HERE/../share:$XDG_DATA_DIRS"
+export GTK_THEME=Adwaita
+export GDK_PIXBUF_MODULEDIR="/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders"
+export GDK_PIXBUF_MODULE_FILE="/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders.cache"
+
+/usr/bin/env python3 "$HERE/../share/simplytoast/src/main.py"
