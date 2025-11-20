@@ -18,7 +18,12 @@ mkdir dist
 # Build source tarball
 # -------------------------
 echo "[1/4] Building tar.gz..."
-tar czf dist/SimplyToast-$VERSION.tar.gz src assets data LICENSE README.md
+mkdir -p temp_src/SimplyToast-$VERSION
+cp -r src assets data LICENSE README.md temp_src/SimplyToast-$VERSION/
+
+tar czf dist/SimplyToast-$VERSION.tar.gz -C temp_src SimplyToast-$VERSION
+
+rm -rf temp_src
 
 # -------------------------
 # Build .deb package
@@ -70,6 +75,10 @@ mv "$APPIMAGE_FILE" "dist/SimplyToast-$VERSION.AppImage"
 # Build Arch PKG in Docker
 # -------------------------
 echo "[4/4] Arch Linux PKG (inside Docker)..."
+
+# auto-update PKGBUILD version
+sed -i "s/^pkgver=.*/pkgver=$VERSION/" PKGBUILD
+sed -i "s/^source=.*/source=(\"SimplyToast-$VERSION.tar.gz\")/" PKGBUILD
 
 # prepare pkgbuild folder
 rm -rf pkgbuild
