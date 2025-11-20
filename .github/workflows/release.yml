@@ -1,44 +1,92 @@
-name: Build Packages
+name: Build & Release (AppImage, DEB, Arch)
 
 on:
   push:
     tags:
-      - "v*"
+      - 'v*'
 
 jobs:
+  build-deb-and-appimage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set VERSION
+        run: |
+          REF=\${GITHUB_REF#refs/tags/}
+          REF=\${REF#v}
+          echo "VERSION=\$REF" >> \$GITHUB_ENV
+
+      - name: Prep
+        run: |
+          chmod +x build_all.sh || true
+          chmod +x linuxdeploy-x86_64.AppImage || true
+          sudo apt-get update
+          sudo apt-get install -y zip gzip xz-utils tar patchelf dpkg-dev
+
+      - name: Run build_all.sh
+        run: ./build_all.sh "\$VERSION"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: simplytoast-artifacts
+          path: dist/*
+
   build-arch:
     runs-on: ubuntu-latest
     container: archlinux:latest
+    needs: build-deb-and-appimage
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install deps
-        run: pacman -Sy --noconfirm base-devel python gtk4 python-gobject
-
-      - name: Build PKG
+      - name: Prep Arch builder
         run: |
+          pacman -Sy --noconfirm
+          pacman -S --noconfirm base-devel fakeroot
+
+      - name: Copy sources
+        run: |
+          mkdir -p pkgbuild
+          cp PKGBUILD pkgbuild/
+          cp dist/*.tar.gz pkgbuild/ || true
+
+      - name: Build Arch package
+        run: |
+          cd pkgbuild
           makepkg -fs --noconfirm
-          ls -l *.pkg.tar.zst
+          cp *.pkg.tar.zst /github/workspace/dist/
 
-      - name: Upload to Release
-        uses: softprops/action-gh-release@v1
+      - uses: actions/upload-artifact@v4
         with:
-          files: "*.pkg.tar.zst"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: simplytoast-arch
+          path: dist/*.pkg.tar.zst
 
-  build-deb:
+  release:
     runs-on: ubuntu-latest
+    needs: [build-deb-and-appimage, build-arch]
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build DEB
-        run: |
-          dpkg-deb --build deb_build simplytoast-${GITHUB_REF_NAME}.deb
+      - uses: actions/download-artifact@v4
+        with:
+          name: simplytoast-artifacts
+          path: ./dist
 
-      - name: Upload to Release
+      - uses: actions/download-artifact@v4
+        with:
+          name: simplytoast-arch
+          path: ./dist
+
+      - name: Extract version
+        run: |
+          REF=\${GITHUB_REF#refs/tags/}
+          REF=\${REF#v}
+          echo "VERSION=\$REF" >> \$GITHUB_ENV
+
+      - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: "simplytoast-${{ github.ref_name }}.deb"
+          tag_name: \${{ github.ref_name }}
+          files: dist/*
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: \${{ secrets.GITHUB_TOKEN }}
