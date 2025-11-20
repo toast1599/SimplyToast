@@ -5,7 +5,6 @@ VERSION="$1"
 
 if [ -z "$VERSION" ]; then
     echo "Usage: ./build_all.sh <version>"
-    echo "Example: ./build_all.sh 0.9.1.4"
     exit 1
 fi
 
@@ -15,20 +14,9 @@ rm -rf dist
 mkdir dist
 
 # -------------------------
-# Build source tarball
-# -------------------------
-echo "[1/4] Building tar.gz..."
-mkdir -p temp_src/SimplyToast-$VERSION
-cp -r src assets data LICENSE README.md temp_src/SimplyToast-$VERSION/
-
-tar czf dist/SimplyToast-$VERSION.tar.gz -C temp_src SimplyToast-$VERSION
-
-rm -rf temp_src
-
-# -------------------------
 # Build .deb package
 # -------------------------
-echo "[2/4] Building DEB..."
+echo "[1/2] Building DEB..."
 rm -rf deb_build
 mkdir -p deb_build/usr/bin
 mkdir -p deb_build/usr/share/simplytoast
@@ -54,7 +42,7 @@ dpkg-deb --build deb_build dist/simplytoast_${VERSION}.deb
 # -------------------------
 # Build AppImage
 # -------------------------
-echo "[3/4] Building AppImage..."
+echo "[2/2] Building AppImage..."
 rm -rf AppDir
 mkdir -p AppDir/usr/bin
 mkdir -p AppDir/usr/share/simplytoast
@@ -71,41 +59,5 @@ ARCH=x86_64 ./linuxdeploy-x86_64.AppImage --appdir AppDir --output appimage
 APPIMAGE_FILE=$(ls SimplyToast-*.AppImage | head -n 1)
 mv "$APPIMAGE_FILE" "dist/SimplyToast-$VERSION.AppImage"
 
-# -------------------------
-# Build Arch PKG in Docker
-# -------------------------
-
-echo "[4/4] Arch Linux PKG (inside Docker)..."
-
-rm -rf pkgbuild
-mkdir -p "pkgbuild/SimplyToast-$VERSION"
-
-# copy PKGBUILD into version folder
-cp PKGBUILD "pkgbuild/SimplyToast-$VERSION/"
-
-# copy project files into versioned folder
-cp -r src assets data LICENSE README.md "pkgbuild/SimplyToast-$VERSION/"
-
-# run arch inside docker using NON-ROOT USER (builderr)
-docker run --rm -t \
-    -v "$(pwd)":/work \
-    archlinux:latest \
-    bash -c "
-        set -e
-
-        pacman -Sy --noconfirm base-devel git sudo
-
-        useradd -m builderr
-        echo 'builderr ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
-        chown -R builderr:builderr /work
-
-        sudo -u builderr bash -c '
-            cd /work/pkgbuild/SimplyToast-$VERSION
-            makepkg -fs --noconfirm
-        '
-    "
-
-# move package to dist
-cp pkgbuild/*.pkg.tar.zst dist/
-
+echo "== DONE =="
 ls -lh dist
