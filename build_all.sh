@@ -67,20 +67,25 @@ APPIMAGE_FILE=$(ls SimplyToast-*.AppImage | head -n 1)
 mv "$APPIMAGE_FILE" "dist/SimplyToast-$VERSION.AppImage"
 
 # -------------------------
-# Build Arch Linux package
+# Build Arch PKG in Docker
 # -------------------------
-echo "[4/4] Building Arch package..."
+echo "[4/4] Arch Linux PKG (inside Docker)..."
+
 rm -rf pkgbuild
 mkdir pkgbuild
 cp PKGBUILD pkgbuild/
 cp dist/SimplyToast-$VERSION.tar.gz pkgbuild/
 
-(
-    cd pkgbuild
-    makepkg -fs --noconfirm
-)
+docker run --rm -t \
+    -v "$(pwd)":/work \
+    archlinux:latest \
+    bash -c "
+        set -e
+        pacman -Sy --noconfirm base-devel git
+        cd /work/pkgbuild
+        makepkg -fs --noconfirm
+    "
 
-mv pkgbuild/*.pkg.tar.zst dist/
+cp pkgbuild/*.pkg.tar.zst dist/
 
-echo "== DONE! Packages are in ./dist =="
 ls -lh dist
