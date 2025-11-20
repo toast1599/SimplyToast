@@ -13,9 +13,9 @@ jobs:
 
       - name: Set VERSION
         run: |
-          REF=\${GITHUB_REF#refs/tags/}
-          REF=\${REF#v}
-          echo "VERSION=\$REF" >> \$GITHUB_ENV
+          REF=${GITHUB_REF#refs/tags/}
+          REF=${REF#v}
+          echo "VERSION=$REF" >> $GITHUB_ENV
 
       - name: Prep
         run: |
