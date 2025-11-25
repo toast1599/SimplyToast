@@ -1,0 +1,37 @@
+name: simplytoast
+base: core22
+version: '0.9.4.5'
+summary: Startup application manager for Linux
+description: |
+  SimplyToast lets you manage startup apps, background processes,
+  and autostart entries with a clean GTK UI.
+
+grade: stable
+confinement: strict
+
+apps:
+  simplytoast:
+    command: usr/bin/simplytoast
+    desktop: usr/share/applications/com.toast1599.SimplyToast.desktop
+
+parts:
+  simplytoast:
+    plugin: dump
+    source: .
+    organize:
+      # main executable
+      src/main.py: usr/bin/simplytoast
+
+      # desktop entry
+      data/com.toast1599.SimplyToast.desktop: usr/share/applications/com.toast1599.SimplyToast.desktop
+
+      # icon
+      data/com.toast1599.SimplyToast.png: usr/share/icons/hicolor/512x512/apps/com.toast1599.SimplyToast.png
+
+      # data folder
+      data/css: usr/share/simplytoast/data/css
+      data/com.toast1599.SimplyToast.appdata.xml: usr/share/metainfo/com.toast1599.SimplyToast.appdata.xml
+
+      # assets folder
+      assets: usr/share/simplytoast/assets
+      
