@@ -1,90 +1,81 @@
-/* =============================
-   BASE COLORS (MID THEME)
-   ============================= */
-window,
-headerbar,
-box {
-    background-color: #1f1f1f;   /* dark grey */
-    color: #f0f0f0;              /* soft white */
+/* ============================
+   MID THEME (Balanced Neutral)
+   ============================ */
+
+@define-color accent #6A5DFF;
+@define-color accent_hover #4D7BFF;
+@define-color accent_alt #A37CFF;
+
+window, headerbar, box {
+    background-color: #2A2A2F;
+    color: #F0F0F2;
 }
 
-/* Inputs */
-entry {
-    background-color: #2a2a2a;
-    color: #ffffff;
-    border: 1px solid #555555;
+/* Headerbar */
+headerbar {
     padding: 6px;
+    background-color: #323238;
+    border-bottom: 1px solid #3A3A42;
 }
 
 /* Buttons */
 button {
-    background-color: #2a2a2a;
-    color: #ffffff;
-    border: 1px solid #555555;
-    padding: 6px 10px;
+    background-color: #34343A;
+    color: #F0F0F0;
+    border: none;
+    border-radius: 6px;
 }
 
 button:hover {
-    background-color: #3a3a3a;
+    background-color: #3D3D45;
 }
 
-/* Menus */
-menu,
-menuitem {
-    background-color: #2a2a2a;
-    color: #ffffff;
+button:active {
+    background-color: @accent;
 }
 
-menuitem:hover {
-    background-color: #3a3a3a;
+/* Inputs */
+entry {
+    background-color: #2F2F36;
+    color: #FFF;
+    border-radius: 6px;
+    border: 1px solid #45454D;
 }
 
-/* Section Titles */
-label {
-    font-weight: bold;
+entry:focus {
+    border-color: @accent;
 }
 
 /* TreeView */
 treeview {
-    background-color: #1f1f1f;
-    color: #f0f0f0;
-}
-
-treeview:selected {
-    background-color: #3a3a3a;
+    background-color: #26262C;
+    color: #EFEFEF;
+    border: none;
 }
 
 treeview row:nth-child(even) {
-    background-color: #262626; /* subtle even-odd stripes */
+    background-color: #2C2C33;
+}
+
+treeview:selected {
+    background-color: rgba(106, 93, 255, 0.25);
 }
 
 /* Column Headers */
 treeview header button {
-    font-weight: bold;
+    background-color: #2F2F36;
+    color: #D0D0D0;
+    border: none;
 }
 
+/* Divider */
 paned separator {
-    background-color: #555555;
-    min-width: 14px;
+    background-color: #404048;
+    min-width: 10px;
 }
 
-/* GLOBAL BORDERS (Mid Theme) */
-frame,
-scrolledwindow,
-entry,
-button {
-    border: 2px solid #666666;
+/* Scrollbars */
+scrollbar slider {
+    background-color: #4A4A54;
+    border-radius: 8px;
 }
-treeview {
-    border: 2px solid #666666;
-}
-entry,
-button {
-    border: 2px solid #666666;
-}
-
-treeview,
-scrolledwindow {
-    border: 2px solid #777777;
-}
-
