@@ -168,8 +168,8 @@ class ToastWindow(Gtk.Window):
         # apply theme if applicable (safe no-op if css disabled)
         try:
             apply_theme(self, self.settings.get("theme"))
-        except Exception:
-            pass
+        except Exception as e:
+            print('[ERROR] Unhandled exception:', e)
 
     def _on_sidebar_select(self, key):
         """Switch visible page and call refresh if available."""
@@ -196,8 +196,8 @@ class ToastWindow(Gtk.Window):
         if page and hasattr(page, "refresh"):
             try:
                 page.refresh()
-            except Exception:
-                pass
+            except Exception as e:
+                print('[ERROR] Unhandled exception:', e)
 
     def _on_search_changed(self, entry):
         text = entry.get_text().strip().lower()
@@ -205,8 +205,8 @@ class ToastWindow(Gtk.Window):
         try:
             if hasattr(visible, "on_search"):
                 visible.on_search(text)
-        except Exception:
-            pass
+        except Exception as e:
+            print('[ERROR] Unhandled exception:', e)
 
     def _on_refresh(self):
         """Delegate refresh to all pages that implement `refresh()`."""
@@ -222,13 +222,13 @@ class ToastWindow(Gtk.Window):
         try:
             from .help_window import HelpWindow
             HelpWindow(self).present()
-        except Exception:
-            pass
+        except Exception as e:
+            print('[ERROR] Unhandled exception:', e)
 
     def _initial_refresh(self):
         try:
             self.startup_page.refresh()
             self.background_page.refresh()
-        except Exception:
-            pass
+        except Exception as e:
+            print('[ERROR] Unhandled exception:', e)
         return False

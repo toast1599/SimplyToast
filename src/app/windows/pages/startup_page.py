@@ -157,8 +157,8 @@ class StartupPage(Gtk.Box):
                         if line.startswith("Exec="):
                             exec_cmd = line.split("=", 1)[1].strip()
                             break
-            except Exception:
-                pass
+            except Exception as e:
+                print('[ERROR] Unhandled exception:', e)
 
             row = AutostartRow(
                 rec=[name, enabled, str(filepath), source, icon, comment, exec_cmd],
@@ -204,8 +204,8 @@ class StartupPage(Gtk.Box):
                         exec_cmd = line.split("=", 1)[1].strip()
                     elif line.startswith("Comment="):
                         comment = line.split("=", 1)[1].strip()
-        except Exception:
-            pass
+        except Exception as e:
+            print('[ERROR] Unhandled exception:', e)
 
         EditEntryWindow(self.get_root(), row.filepath, row.name, exec_cmd, comment, row.icon).present()
 

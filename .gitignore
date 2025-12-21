@@ -1,4 +1,19 @@
-*.bak
-*.save
-*.json.bak
-*.json.save
+# Python
+__pycache__/
+*.pyc
+
+# Build artifacts
+*.flatpak
+AppDir/
+flatpak-repo/
+linuxdeploy*.AppImage
+
+# Packaging/output junk
+usr/
+py_only/
+py_only.zip
+
+# Random
+src_old/
+grep
+

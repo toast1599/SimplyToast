@@ -29,8 +29,8 @@ def parse_desktop_file(filepath):
                     icon = line.split("=", 1)[1].strip()
                 elif line.startswith("Hidden="):
                     enabled = not ("true" in line.lower())
-    except Exception:
-        pass
+    except Exception as e:
+        print('[ERROR] Unhandled exception:', e)
 
     return name, comment, icon, enabled
 
@@ -49,12 +49,12 @@ def set_enabled(filepath, enabled):
             lines.append("Hidden=false\n" if enabled else "Hidden=true\n")
         with open(filepath, "w") as f:
             f.writelines(lines)
-    except Exception:
-        pass
+    except Exception as e:
+        print('[ERROR] Unhandled exception:', e)
 
 
 def delete_autostart(filepath):
     try:
         Path(filepath).unlink(missing_ok=True)
-    except Exception:
-        pass
+    except Exception as e:
+        print('[ERROR] Unhandled exception:', e)
