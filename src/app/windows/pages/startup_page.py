@@ -2,27 +2,48 @@
 from pathlib import Path
 import gi
 gi.require_version("Gtk", "4.0")
-from gi.repository import Gtk, Pango, GLib
+from gi.repository import Gtk, Pango
 
+from ...log import get_logger
 from ...autostart import scan_autostart, parse_desktop_file, set_enabled, delete_autostart
 from ...config import AUTOSTART_USER
+from ...processes import (
+    scan_processes,
+    group_processes_by_exe,
+    compute_startup_impact,
+)
 from ..entry_new import NewEntryWindow
 from ..entry_edit import EditEntryWindow
+
+log = get_logger(__name__)
 
 
 def short_text(text, length=80):
     if not text:
         return ""
-    t = str(text)
-    return (t[:length - 1] + "…") if len(t) > length else t
+    text = str(text)
+    return text if len(text) <= length else text[: length - 1] + "…"
 
+
+# ---------------------------------------------------------------------
+# Row
+# ---------------------------------------------------------------------
 
 class AutostartRow(Gtk.ListBoxRow):
     def __init__(self, rec, on_toggle, on_edit, on_delete):
         super().__init__()
 
-        self.name, self.enabled, self.filepath, self.source, \
-        self.icon, self.comment, self.exec_cmd = rec
+        (
+            self.name,
+            self.enabled,
+            self.filepath,
+            self.source,
+            self.icon,
+            self.comment,
+            self.exec_cmd,
+            self.impact_label,
+            self.impact_color,
+        ) = rec
 
         self._on_toggle_cb = on_toggle
         self._on_edit_cb = on_edit
@@ -54,21 +75,34 @@ class AutostartRow(Gtk.ListBoxRow):
         spacer.set_hexpand(True)
         box.append(spacer)
 
-        impact = Gtk.Label(label="—", xalign=1.0)
+        impact = Gtk.Label(xalign=1.0)
+        if self.impact_label and self.impact_color:
+            impact.set_markup(
+                f"<span foreground='{self.impact_color}'><b>{self.impact_label}</b></span>"
+            )
+        else:
+            impact.set_text("—")
+
+        impact.set_tooltip_text(
+            "Estimated impact (heuristic, relative — not a boot-time measurement.)"
+        )
         box.append(impact)
 
         sw = Gtk.Switch()
         sw.set_active(self.enabled)
+        sw.set_tooltip_text("Enable or disable this app at login")
         sw.connect("state-set", self._on_toggle)
         box.append(sw)
 
         btn_edit = Gtk.Button()
         btn_edit.set_child(Gtk.Image.new_from_icon_name("document-edit-symbolic"))
+        btn_edit.set_tooltip_text("Edit command and metadata for this startup entry")
         btn_edit.connect("clicked", lambda *_: self._on_edit_cb(self))
         box.append(btn_edit)
 
         btn_delete = Gtk.Button()
         btn_delete.set_child(Gtk.Image.new_from_icon_name("user-trash-symbolic"))
+        btn_delete.set_tooltip_text("Remove this app from startup")
         btn_delete.connect("clicked", lambda *_: self._on_delete_cb(self))
         box.append(btn_delete)
 
@@ -83,6 +117,10 @@ class AutostartRow(Gtk.ListBoxRow):
         return False
 
 
+# ---------------------------------------------------------------------
+# Page
+# ---------------------------------------------------------------------
+
 class StartupPage(Gtk.Box):
     def __init__(self, parent):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=8)
@@ -96,17 +134,19 @@ class StartupPage(Gtk.Box):
         bar = Gtk.Box(spacing=8)
 
         btn_new = Gtk.Button(label="New")
+        btn_new.set_tooltip_text("Create a new startup entry")
         btn_new.connect("clicked", self.on_new)
         bar.append(btn_new)
 
         btn_edit = Gtk.Button(label="Edit")
+        btn_edit.set_tooltip_text("Edit the selected startup entry")
         btn_edit.connect("clicked", self.on_edit)
         bar.append(btn_edit)
 
         btn_delete = Gtk.Button(label="Delete")
+        btn_delete.set_tooltip_text("Remove the selected startup entry")
         btn_delete.connect("clicked", self.on_delete)
         bar.append(btn_delete)
-
 
         spacer = Gtk.Box()
         spacer.set_hexpand(True)
@@ -114,32 +154,62 @@ class StartupPage(Gtk.Box):
 
         refresh = Gtk.Button()
         refresh.set_child(Gtk.Image.new_from_icon_name("view-refresh-symbolic"))
+        refresh.set_tooltip_text("Refresh startup entries")
         refresh.connect("clicked", lambda *_: self.refresh())
         bar.append(refresh)
 
         self.append(bar)
 
-        # list
         sc = Gtk.ScrolledWindow()
         sc.set_hexpand(True)
         sc.set_vexpand(True)
 
         self.listbox = Gtk.ListBox()
-        self.listbox.set_hexpand(True)
-        self.listbox.set_vexpand(True)
-
         sc.set_child(self.listbox)
         self.append(sc)
 
-    # ---------------- core ----------------
+    # --------------------------------------------------------------
+
+    def _impact_level(self, impact, max_impact):
+        if max_impact <= 0:
+            return None, None
+
+        ratio = impact / max_impact
+
+        if ratio < 0.3:
+            return "Low", "green"
+        elif ratio < 0.7:
+            return "Medium", "orange"
+        else:
+            return "High", "red"
+
+    def _impact_sort_key(self, impact, max_impact):
+        if max_impact <= 0:
+            return 3
+        ratio = impact / max_impact
+        if ratio >= 0.7:
+            return 0
+        elif ratio >= 0.3:
+            return 1
+        elif ratio > 0:
+            return 2
+        else:
+            return 3
 
     def refresh(self):
         self.listbox.remove_all()
 
         try:
             entries = scan_autostart()
-        except Exception:
-            entries = []
+        except Exception as e:
+            log.error("Failed to scan autostart entries", exc_info=e)
+            return
+
+        processes = scan_processes()
+        proc_groups = group_processes_by_exe(processes)
+
+        rows = []
+        impacts = []
 
         for filepath, source in entries:
             try:
@@ -157,20 +227,36 @@ class StartupPage(Gtk.Box):
                         if line.startswith("Exec="):
                             exec_cmd = line.split("=", 1)[1].strip()
                             break
-            except Exception as e:
-                print('[ERROR] Unhandled exception:', e)
+            except Exception:
+                pass
+
+            impact = compute_startup_impact(exec_cmd, proc_groups)
+
+            rows.append(
+                (name, enabled, str(filepath), source, icon, comment, exec_cmd)
+            )
+            impacts.append(impact)
+
+        max_impact = max(impacts, default=0.0)
+
+        sorted_items = sorted(
+            zip(rows, impacts),
+            key=lambda item: self._impact_sort_key(item[1], max_impact),
+        )
+
+        for row_data, impact in sorted_items:
+            impact_label, impact_color = self._impact_level(impact, max_impact)
 
             row = AutostartRow(
-                rec=[name, enabled, str(filepath), source, icon, comment, exec_cmd],
+                rec=[*row_data, impact_label, impact_color],
                 on_toggle=self._toggle_entry,
                 on_edit=self._edit_entry,
                 on_delete=self._delete_entry,
             )
 
-            row.set_visible(True)   # ← THIS IS THE FIX
             self.listbox.append(row)
 
-    # ---------------- actions ----------------
+    # --------------------------------------------------------------
 
     def _toggle_entry(self, row, state):
         path = Path(row.filepath)
@@ -182,11 +268,12 @@ class StartupPage(Gtk.Box):
             else:
                 AUTOSTART_USER.mkdir(parents=True, exist_ok=True)
                 if not state:
-                    override.write_text("[Desktop Entry]\nHidden=true\n")
+                    from ...utils.fs import atomic_write
+                    atomic_write(override, "[Desktop Entry]\nHidden=true\n")
                 else:
                     override.unlink(missing_ok=True)
         except Exception as e:
-            print("Toggle failed:", e)
+            log.error("Toggle failed", exc_info=e)
 
         self.refresh()
 
@@ -204,10 +291,17 @@ class StartupPage(Gtk.Box):
                         exec_cmd = line.split("=", 1)[1].strip()
                     elif line.startswith("Comment="):
                         comment = line.split("=", 1)[1].strip()
-        except Exception as e:
-            print('[ERROR] Unhandled exception:', e)
+        except Exception:
+            pass
 
-        EditEntryWindow(self.get_root(), row.filepath, row.name, exec_cmd, comment, row.icon).present()
+        EditEntryWindow(
+            self.get_root(),
+            row.filepath,
+            row.name,
+            exec_cmd,
+            comment,
+            row.icon,
+        ).present()
 
     def _delete_entry(self, row):
         if row.source == "system":
@@ -218,7 +312,7 @@ class StartupPage(Gtk.Box):
             modal=True,
             message_type=Gtk.MessageType.QUESTION,
             buttons=Gtk.ButtonsType.OK_CANCEL,
-            text=f"Delete '{row.name}'?"
+            text=f"Delete '{row.name}'?",
         )
 
         def resp(d, r):
@@ -229,8 +323,6 @@ class StartupPage(Gtk.Box):
 
         dlg.connect("response", resp)
         dlg.present()
-
-    # ---------------- toolbar ----------------
 
     def _selected_row(self):
         row = self.listbox.get_selected_row()
@@ -249,11 +341,8 @@ class StartupPage(Gtk.Box):
         if row:
             self._delete_entry(row)
 
-    # ---------------- search ----------------
-
     def on_search(self, text):
         q = (text or "").lower().strip()
-
         row = self.listbox.get_first_child()
         while row:
             row.set_visible(
@@ -262,5 +351,3 @@ class StartupPage(Gtk.Box):
                 or q in row.exec_cmd.lower()
             )
             row = row.get_next_sibling()
-
-

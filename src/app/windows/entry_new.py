@@ -77,8 +77,9 @@ class NewEntryWindow(Gtk.Window):
         text.append("Hidden=false\n")
         text.append("X-GNOME-Autostart-enabled=true\n")
 
-        with open(filename, "w") as f:
-            f.writelines(text)
+        from ..utils.fs import atomic_write
+
+        atomic_write(filename, "".join(text))
 
         self.parent.refresh_autostart()
         self.close()

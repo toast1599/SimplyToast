@@ -22,10 +22,19 @@ class SettingsPage(Gtk.Box):
 
     def _build_background_section(self):
         frame = Gtk.Frame(label="Background Monitoring")
-        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+
+        box = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL,
+            spacing=8,
+            margin_top=8,
+            margin_bottom=8,
+            margin_start=8,
+            margin_end=8,
+        )
         frame.set_child(box)
 
-        row = Gtk.Box(spacing=12)
+        grid = Gtk.Grid(column_spacing=12)
+        grid.set_hexpand(True)
 
         label = Gtk.Label(
             label="Pause monitoring when page is hidden",
@@ -34,23 +43,33 @@ class SettingsPage(Gtk.Box):
         label.set_hexpand(True)
 
         switch = Gtk.Switch()
+        switch.set_halign(Gtk.Align.END)
         switch.set_active(
             self.settings.get("pause_background_when_hidden", True)
         )
         switch.connect("state-set", self._on_pause_toggle)
 
-        row.append(label)
-        row.append(switch)
-        box.append(row)
+        grid.attach(label, 0, 0, 1, 1)
+        grid.attach(switch, 1, 0, 1, 1)
 
+        box.append(grid)
         self.append(frame)
 
     def _build_refresh_section(self):
         frame = Gtk.Frame(label="Performance")
-        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+
+        box = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL,
+            spacing=8,
+            margin_top=8,
+            margin_bottom=8,
+            margin_start=8,
+            margin_end=8,
+        )
         frame.set_child(box)
 
-        row = Gtk.Box(spacing=12)
+        grid = Gtk.Grid(column_spacing=12)
+        grid.set_hexpand(True)
 
         label = Gtk.Label(
             label="Process refresh interval",
@@ -59,8 +78,9 @@ class SettingsPage(Gtk.Box):
         label.set_hexpand(True)
 
         combo = Gtk.ComboBoxText()
-        options = [2000, 3000, 5000]
+        combo.set_halign(Gtk.Align.END)
 
+        options = [2000, 3000, 5000]
         for ms in options:
             combo.append_text(f"{ms // 1000}s")
 
@@ -76,10 +96,10 @@ class SettingsPage(Gtk.Box):
 
         combo.connect("changed", self._on_refresh_changed)
 
-        row.append(label)
-        row.append(combo)
-        box.append(row)
+        grid.attach(label, 0, 0, 1, 1)
+        grid.attach(combo, 1, 0, 1, 1)
 
+        box.append(grid)
         self.append(frame)
 
     # ---------------- handlers ----------------
@@ -98,8 +118,9 @@ class SettingsPage(Gtk.Box):
         self.settings["refresh_interval_ms"] = ms
         save_settings(self.settings)
 
+        self.parent.background_page._start_timer()
+
     # ---------------- lifecycle ----------------
 
     def refresh(self):
-        # nothing dynamic to refresh yet
         pass

@@ -65,8 +65,10 @@ class EditEntryWindow(Gtk.Window):
         lines.append("Hidden=false\n")
         lines.append("X-GNOME-Autostart-enabled=true\n")
 
-        with open(self.filepath, "w") as f:
-            f.writelines(lines)
+        from ..utils.fs import atomic_write
+
+        atomic_write(self.filepath, "".join(lines))
+
 
         self.parent.refresh_autostart()
         self.close()

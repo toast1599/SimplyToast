@@ -47,8 +47,10 @@ def set_enabled(filepath, enabled):
                 lines.append(line)
         if not found:
             lines.append("Hidden=false\n" if enabled else "Hidden=true\n")
-        with open(filepath, "w") as f:
-            f.writelines(lines)
+        from .utils.fs import atomic_write
+
+        atomic_write(filepath, "".join(lines))  
+
     except Exception as e:
         print('[ERROR] Unhandled exception:', e)
 
