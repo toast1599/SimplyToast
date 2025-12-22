@@ -13,28 +13,21 @@ ORIG_HEAD="$(git rev-parse HEAD)"
 rollback() {
   echo "⚠️  ERROR — rolling back release"
 
-  # remove pushed tag
   if [[ "$TAG_PUSHED" -eq 1 ]]; then
     echo "↩ Removing remote tag"
     git push origin ":refs/tags/$TAG" || true
   fi
 
-  # remove local tag
   if [[ "$TAG_CREATED" -eq 1 ]]; then
     echo "↩ Removing local tag"
     git tag -d "$TAG" || true
   fi
 
-  # reset commit + files
-  if [[ "$COMMIT_CREATED" -eq 1 ]]; then
-    echo "↩ Resetting git state"
-    git reset --hard "$ORIG_HEAD" || true
-  else
-    git checkout -- .
-  fi
+  echo "↩ Restoring git state"
+  git reset --hard "$ORIG_HEAD"
+  git clean -fd
 
-  # clean build junk
-  rm -rf pkg src/simplytoast-* *.pkg.tar.zst *.tar.gz PKGBUILD
+  rm -rf pkg *.pkg.tar.zst *.tar.gz PKGBUILD
 
   echo "❌ Rollback complete"
   exit 1
