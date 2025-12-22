@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtualenvs
+.venv/
+venv/
+
+# Editor junk
+*.swp
+*.swo
+*.tmp
+
+# OS junk
+.DS_Store
