@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"time"
 )
 
 const (
@@ -16,11 +17,10 @@ const (
 )
 
 var (
-	tagCreated bool
 	tag        string
-	buildDir   string
-	outDir     string
-	rootDir    string
+	rootDir   string
+	buildDir  string
+	outDir    string
 )
 
 func run(name string, args ...string) {
@@ -42,55 +42,28 @@ func runInDir(dir, name string, args ...string) {
 	}
 }
 
-func cleanup() {
-	if !tagCreated {
-		return
-	}
-
-	fmt.Println("⚠️ Cleaning up after failure...")
-
-	_ = os.RemoveAll(buildDir)
-	_ = os.RemoveAll(outDir)
-
-	exec.Command("git", "reset", "--hard", "HEAD").Run()
-
-	if tag != "" {
-		exec.Command("git", "tag", "-d", tag).Run()
-	}
-
-	fmt.Println("🧹 Environment restored.")
-}
-
 func main() {
-	defer func() {
-		if r := recover(); r != nil {
-			cleanup()
-			panic(r)
-		}
-	}()
-
 	if len(os.Args) < 2 {
 		log.Fatal("❌ Usage: release <version>")
 	}
 
 	version := os.Args[1]
-	versionRe := regexp.MustCompile(`^[0-9]+(\.[0-9]+)+$`)
-	if !versionRe.MatchString(version) {
+	if !regexp.MustCompile(`^[0-9]+(\.[0-9]+)+$`).MatchString(version) {
 		log.Fatal("❌ Invalid version format")
 	}
 
 	tag = TagPrefix + version
 
-	var err error
-	rootDir, err = os.Getwd()
+	exe, err := os.Executable()
 	if err != nil {
 		log.Fatal(err)
 	}
+	rootDir = filepath.Dir(exe)
 
 	buildDir = filepath.Join(rootDir, "build")
 	outDir = filepath.Join(rootDir, "out")
 
-	// Git cleanliness check
+	// Git clean check
 	status := exec.Command("git", "status", "--porcelain")
 	out, _ := status.Output()
 	if len(bytes.TrimSpace(out)) != 0 {
@@ -100,64 +73,45 @@ func main() {
 	// Version bump
 	fmt.Println("▶ Updating version.py")
 	versionFile := filepath.Join(rootDir, "src", "version.py")
-	if err := os.WriteFile(versionFile, []byte(fmt.Sprintf(`VERSION = "%s"`+"\n", version)), 0644); err != nil {
+	if err := os.WriteFile(versionFile,
+		[]byte(fmt.Sprintf("VERSION = \"%s\"\n", version)),
+		0644); err != nil {
 		log.Fatal(err)
 	}
 
 	run("git", "add", "src/version.py")
+	run("git", "commit", "-m", fmt.Sprintf("Bump version to %s", version))
 
-	diff := exec.Command("git", "diff", "--cached", "--quiet")
-	if err := diff.Run(); err != nil {
-		run("git", "commit", "-m", fmt.Sprintf("Bump version to %s", version))
-	}
+	// Tag + push FIRST (AUR REQUIRES THIS)
+	fmt.Println("▶ Tagging and pushing...")
+	run("git", "tag", tag)
+	run("git", "push", "origin", "HEAD")
+	run("git", "push", "origin", tag)
 
-	// Prepare dirs
-artifactRoot := filepath.Join(
-        buildDir,
-        fmt.Sprintf("%s-%s", AppName, version),
-    )
+	// Give GitHub time to generate tarball
+	fmt.Println("⏳ Waiting for GitHub tarball...")
+	time.Sleep(10 * time.Second)
 
-    run("mkdir", "-p", artifactRoot)
-
-    run("rsync", "-a",
-        "--exclude=__pycache__",
-        "--exclude=*.pyc",
-        "--exclude=*.AppImage",
-        "src/",
-        filepath.Join(artifactRoot, "src"),
-    )
-
-    run("rsync", "-a",
-        "data/",
-        filepath.Join(artifactRoot, "data"),
-    )
-
-    tarball := filepath.Join(
-        buildDir,
-        fmt.Sprintf("%s-%s.tar.gz", AppName, version),
-    )
-
-    run(
-        "tar", "-czf",
-        tarball,
-        "-C", buildDir,
-        fmt.Sprintf("%s-%s", AppName, version),
-    )
-
-	// ARCH
+	// Arch build (AUR-compliant)
 	fmt.Println("▶ Building Arch...")
 	archDir := filepath.Join(buildDir, "arch")
 	run("mkdir", "-p", archDir)
-	run("cp", "packaging/arch/PKGBUILD", archDir)
-	run("cp", filepath.Join(buildDir, "artifact.tar.gz"), archDir)
+	run("cp", filepath.Join(rootDir, "packaging/arch/PKGBUILD"), archDir)
 
-	run("sed", "-i", fmt.Sprintf("s/^pkgver=.*/pkgver=%s/", version), filepath.Join(archDir, "PKGBUILD"))
 	runInDir(archDir, "makepkg", "-sf", "--noconfirm")
-	run("mv", filepath.Join(archDir, "*.pkg.tar.zst"), outDir)
 
-	// DEB / RPM / AppImage
+	matches, err := filepath.Glob(filepath.Join(archDir, "*.pkg.tar.zst"))
+	if err != nil || len(matches) == 0 {
+		log.Fatal("❌ No Arch package produced")
+	}
+	run("mkdir", "-p", outDir)
+	for _, m := range matches {
+		run("mv", m, outDir)
+	}
+
+	// Other builds (unchanged)
 	type containerBuild struct {
-		name string
+		name  string
 		image string
 	}
 
@@ -171,21 +125,13 @@ artifactRoot := filepath.Join(
 		fmt.Printf("▶ Building %s...\n", b.name)
 		dir := filepath.Join(buildDir, b.name)
 		run("mkdir", "-p", dir)
-		run("cp", "-r", filepath.Join("packaging", b.name)+"/.", dir)
-		run("cp", filepath.Join(buildDir, "artifact.tar.gz"), dir)
+		run("cp", "-r", filepath.Join(rootDir, "packaging", b.name)+"/.", dir)
 		run("podman", "run", "--rm",
 			"-v", fmt.Sprintf("%s:/build:Z", dir),
 			"-v", fmt.Sprintf("%s:/out:Z", outDir),
 			b.image, "./build.sh", version,
 		)
 	}
-
-	// Tag + push
-	fmt.Println("▶ Tagging and pushing...")
-	run("git", "tag", tag)
-	tagCreated = true
-	run("git", "push", "origin", "HEAD")
-	run("git", "push", "origin", tag)
 
 	// GitHub release
 	fmt.Println("▶ Creating GitHub release...")
