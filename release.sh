@@ -68,7 +68,12 @@ VERSION = "$VERSION"
 EOF
 
 git add src/version.py
-git commit -m "Bump version to $VERSION"
+
+if git diff --cached --quiet; then
+  echo "ℹ️ version.py already at $VERSION"
+else
+  git commit -m "Bump version to $VERSION"
+fi
 
 ### -------------------------
 ### BUILD ARTIFACT (ONCE)
