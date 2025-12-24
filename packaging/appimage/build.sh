@@ -30,7 +30,7 @@ chmod +x "$APPDIR/AppRun"
 
 # 5. THE FIX: Pass ARCH directly into the environment of the command execution
 # We use 'env' to ensure the plugin sees the variable inside the container.
-env ARCH=x86_64 linuxdeploy --appimage-extract-and-run \
+env ARCH=x86_64 linuxdeploy \
   --appdir "$APPDIR" \
   --plugin appimage \
   --output appimage
