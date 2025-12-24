@@ -7,8 +7,6 @@ License:        GPL-3.0-or-later
 URL:            https://github.com/toast1599/SimplyToast
 Source0:        artifact.tar.gz
 
-BuildArch:      noarch
-
 Requires:       python3
 Requires:       python3-gobject
 Requires:       gtk4
