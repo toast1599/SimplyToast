@@ -2,165 +2,129 @@
 set -euo pipefail
 
 ### -------------------------
-### CONFIG
+### CONFIG & CLEANUP TRAP
 ### -------------------------
 APP_NAME="SimplyToast"
-PKG_NAME="simplytoast"
 TAG_PREFIX="v"
+
+TAG_CREATED=0
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 BUILD_DIR="$ROOT/build"
 OUT_DIR="$ROOT/out"
 
-ARCH_PKG_DIR="$ROOT/packaging/arch"
-DEB_PKG_DIR="$ROOT/packaging/deb"
-RPM_PKG_DIR="$ROOT/packaging/rpm"
-APPIMAGE_PKG_DIR="$ROOT/packaging/appimage"
+# This function runs if the script exits UNEXPECTEDLY
+cleanup_on_failure() {
+    local exit_code=$?
+    if [ $exit_code -ne 0 ]; then
+        echo "⚠️ Script failed with exit code $exit_code. Cleaning up..."
+        
+        # 1. Remove build artifacts
+        rm -rf "$BUILD_DIR" "$OUT_DIR"
+        
+        # 2. Rollback git changes (version.py bump)
+        git reset --hard HEAD >/dev/null 2>&1
+        
+        # 3. Delete the tag if it was created locally but not pushed
+        if [[ "$TAG_CREATED" -eq 1 ]]; then
+            git tag -d "$TAG"
+        fi
+        
+        echo "🧹 Environment restored to original state."
+    fi
+}
+
+# Register the cleanup function to run on exit
+trap cleanup_on_failure EXIT
 
 ### -------------------------
-### ARGUMENTS
+### ARGUMENTS & PREFLIGHT
 ### -------------------------
 VERSION="${1:-}"
-
-if [[ -z "$VERSION" ]]; then
-  echo "❌ Usage: ./release.sh <version>"
-  exit 1
-fi
-
-if ! [[ "$VERSION" =~ ^[0-9]+(\.[0-9]+)+$ ]]; then
-  echo "❌ Invalid version format: $VERSION"
+if [[ -z "$VERSION" || ! "$VERSION" =~ ^[0-9]+(\.[0-9]+)+$ ]]; then
+  echo "❌ Usage: ./release.sh <version> (e.g. 1.2.3)"
   exit 1
 fi
 
 TAG="${TAG_PREFIX}${VERSION}"
-
-### -------------------------
-### PREFLIGHT CHECKS
-### -------------------------
-echo "▶ Releasing $APP_NAME $VERSION"
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
 if [[ -n "$(git status --porcelain)" ]]; then
   echo "❌ Git tree is dirty. Commit or stash changes first."
   exit 1
 fi
 
-if git rev-parse "$TAG" >/dev/null 2>&1; then
-  echo "❌ Git tag $TAG already exists"
-  exit 1
-fi
-
-command -v podman >/dev/null || { echo "❌ podman not installed"; exit 1; }
-command -v gh >/dev/null || { echo "❌ gh not installed"; exit 1; }
-
 ### -------------------------
-### CLEAN BUILD OUTPUT
-### -------------------------
-rm -rf "$BUILD_DIR" "$OUT_DIR"
-mkdir -p "$BUILD_DIR" "$OUT_DIR"
-
-### -------------------------
-### VERSION BUMP (SOURCE OF TRUTH)
+### EXECUTION (VERSION BUMP)
 ### -------------------------
 echo "▶ Updating version.py"
-
 cat > "$ROOT/src/version.py" <<EOF
 VERSION = "$VERSION"
 EOF
 
 git add src/version.py
-
 if git diff --cached --quiet; then
   echo "ℹ️ version.py already at $VERSION"
 else
   git commit -m "Bump version to $VERSION"
 fi
 
-### -------------------------
-### BUILD ARTIFACT (ONCE)
-### -------------------------
-echo "▶ Building artifact"
 
+### -------------------------
+### BUILDING (STAYING CLEAN)
+### -------------------------
+mkdir -p "$BUILD_DIR" "$OUT_DIR"
+
+echo "▶ Packing Source..."
 mkdir -p "$BUILD_DIR/artifact"
-
-rsync -a \
-  --exclude='__pycache__' \
-  --exclude='*.pyc' \
-  src/ "$BUILD_DIR/artifact/src/"
-
+rsync -a --exclude='__pycache__' --exclude='*.pyc' --exclude='*.AppImage' src/ "$BUILD_DIR/artifact/src/"
 rsync -a data/ "$BUILD_DIR/artifact/data/"
-
 tar -czf "$BUILD_DIR/artifact.tar.gz" -C "$BUILD_DIR/artifact" .
 
-### -------------------------
-### ARCH PACKAGE (HOST)
-### -------------------------
-echo "▶ Building Arch package"
+# --- ARCH ---
+echo "▶ Building Arch..."
+mkdir -p "$BUILD_DIR/arch"
+cp "$ROOT/packaging/arch/PKGBUILD" "$BUILD_DIR/arch/"
+cp "$BUILD_DIR/artifact.tar.gz" "$BUILD_DIR/arch/"
+(cd "$BUILD_DIR/arch" && makepkg -sf --noconfirm && mv *.pkg.tar.zst "$OUT_DIR/")
 
-cp "$BUILD_DIR/artifact.tar.gz" "$ARCH_PKG_DIR/"
-(
-  cd "$ARCH_PKG_DIR"
-  makepkg -sf --noconfirm
-  mv *.pkg.tar.zst "$OUT_DIR/"
-)
-
-### -------------------------
-### DEB PACKAGE (CONTAINER)
-### -------------------------
-echo "▶ Building DEB package"
-
+# --- DEB ---
+echo "▶ Building DEB..."
 mkdir -p "$BUILD_DIR/deb"
-
+cp -r "$ROOT/packaging/deb/"* "$BUILD_DIR/deb/"
 cp "$BUILD_DIR/artifact.tar.gz" "$BUILD_DIR/deb/"
-podman run --rm \
-  -v "$BUILD_DIR/deb:/build:Z" \
-  -v "$OUT_DIR:/out:Z" \
-  simplytoast-deb \
-  ./build.sh "$VERSION"
+podman run --rm -v "$BUILD_DIR/deb:/build:Z" -v "$OUT_DIR:/out:Z" simplytoast-deb ./build.sh "$VERSION"
 
-### -------------------------
-### RPM PACKAGE (CONTAINER)
-### -------------------------
-echo "▶ Building RPM package"
-
+# --- RPM ---
+echo "▶ Building RPM..."
 mkdir -p "$BUILD_DIR/rpm"
-
+cp -r "$ROOT/packaging/rpm/"* "$BUILD_DIR/rpm/"
 cp "$BUILD_DIR/artifact.tar.gz" "$BUILD_DIR/rpm/"
-podman run --rm \
-  -v "$BUILD_DIR/rpm:/build:Z" \
-  -v "$OUT_DIR:/out:Z" \
-  simplytoast-rpm \
-  ./build.sh "$VERSION"
+podman run --rm -v "$BUILD_DIR/rpm:/build:Z" -v "$OUT_DIR:/out:Z" simplytoast-rpm ./build.sh "$VERSION"
 
-### -------------------------
-### APPIMAGE (CONTAINER)
-### -------------------------
-echo "▶ Building AppImage"
-
+# --- APPIMAGE ---
+echo "▶ Building AppImage..."
 mkdir -p "$BUILD_DIR/appimage"
-
+cp -r "$ROOT/packaging/appimage/"* "$BUILD_DIR/appimage/"
 cp "$BUILD_DIR/artifact.tar.gz" "$BUILD_DIR/appimage/"
-podman run --rm \
-  -v "$BUILD_DIR/appimage:/build:Z" \
-  -v "$OUT_DIR:/out:Z" \
-  simplytoast-appimage \
-  ./build.sh "$VERSION"
+podman run --rm -v "$BUILD_DIR/appimage:/build:Z" -v "$OUT_DIR:/out:Z" simplytoast-appimage ./build.sh "$VERSION"
 
 ### -------------------------
-### TAG + PUSH
+### THE FINAL PUSH
 ### -------------------------
-echo "▶ Tagging release $TAG"
-
+echo "▶ Tagging and Pushing..."
 git tag "$TAG"
-git push origin main
+TAG_CREATED=1
+git push origin "$CURRENT_BRANCH"
 git push origin "$TAG"
 
-### -------------------------
-### GITHUB RELEASE
-### -------------------------
-echo "▶ Creating GitHub release"
+echo "▶ Creating GitHub release..."
+gh release create "$TAG" "$OUT_DIR"/* --title "$APP_NAME $VERSION" --notes "Release $VERSION"
 
-gh release create "$TAG" "$OUT_DIR"/* \
-  --title "$APP_NAME $VERSION" \
-  --notes "Automated release for $APP_NAME $VERSION"
-
-echo "✅ Release $VERSION completed successfully"
+### -------------------------
+### SUCCESS: DISARM CLEANUP
+### -------------------------
+# If we made it here, success! 
+# We remove the trap so the files STAY for you to see.
+trap - EXIT
+echo "✅ Release $VERSION completed successfully. Artifacts are in $OUT_DIR"
