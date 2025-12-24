@@ -81,6 +81,8 @@ rsync -a --exclude='__pycache__' --exclude='*.pyc' --exclude='*.AppImage' src/ "
 rsync -a data/ "$BUILD_DIR/artifact/data/"
 tar -czf "$BUILD_DIR/artifact.tar.gz" -C "$BUILD_DIR/artifact" .
 
+sed -i "s/pkgver=.*/pkgver=$VERSION/" "$ARCH_PKG_DIR/PKGBUILD"
+
 # --- ARCH ---
 echo "▶ Building Arch..."
 mkdir -p "$BUILD_DIR/arch"
