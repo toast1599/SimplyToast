@@ -17,4 +17,8 @@ py_only.zip
 src_old/
 grep
 build/
+/build/
+/out/
+/*.pkg.tar.zst
+/*.AppImage
 

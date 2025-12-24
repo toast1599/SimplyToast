@@ -1,29 +1,49 @@
 pkgname=simplytoast
-pkgver=0.9.9
+pkgver=0.0.0
 pkgrel=1
-pkgdesc="A lightweight toast notification tool written in Python + GTK4"
-arch=('any')
+pkgdesc="Manage startup and background applications,easier than ever before!"
+arch=(any)
 url="https://github.com/toast1599/SimplyToast"
-license=('GPL3')
-depends=('python' 'python-gobject' 'gtk4')
-source=()
-sha256sums=()
+license=('GPL-3.0-or-later')
+
+depends=(
+  python
+  python-gobject
+  gtk3
+)
+
+source=("artifact.tar.gz")
+sha256sums=('SKIP')
 
 package() {
-    cd "SimplyToast-$pkgver"
+  cd "$srcdir"
 
-    mkdir -p "$pkgdir/usr/bin"
-    mkdir -p "$pkgdir/usr/share/simplytoast"
-    mkdir -p "$pkgdir/usr/share/applications"
-    mkdir -p "$pkgdir/usr/share/icons/hicolor/512x512/apps"
+  # App code
+  install -d "$pkgdir/usr/lib/simplytoast"
+  cp -r src/* "$pkgdir/usr/lib/simplytoast/"
 
-    install -Dm755 src/main.py "$pkgdir/usr/bin/simplytoast"
+  # Data
+  install -d "$pkgdir/usr/lib/simplytoast/data"
+  cp -r data/* "$pkgdir/usr/lib/simplytoast/data/"
 
-    cp -r assets data "$pkgdir/usr/share/simplytoast/"
+  # Launcher wrapper (CRITICAL)
+  install -Dm755 /dev/stdin "$pkgdir/usr/bin/simplytoast" <<'EOF'
+#!/usr/bin/env bash
+export PYTHONPATH="/usr/lib/simplytoast${PYTHONPATH:+:$PYTHONPATH}"
+exec python /usr/lib/simplytoast/main.py "$@"
+EOF
 
-    install -Dm644 data/com.toast1599.SimplyToast.desktop \
-        "$pkgdir/usr/share/applications/com.toast1599.SimplyToast.desktop"
+  # Desktop + metadata
+  install -Dm644 data/com.toast1599.SimplyToast.desktop \
+    "$pkgdir/usr/share/applications/com.toast1599.SimplyToast.desktop"
 
-    install -Dm644 data/com.toast1599.SimplyToast.png \
-        "$pkgdir/usr/share/icons/hicolor/512x512/apps/com.toast1599.SimplyToast.png"
+  install -Dm644 data/com.toast1599.SimplyToast.appdata.xml \
+    "$pkgdir/usr/share/metainfo/com.toast1599.SimplyToast.appdata.xml"
+
+  install -Dm644 data/icons/com.toast1599.SimplyToast-512.png \
+    "$pkgdir/usr/share/icons/hicolor/512x512/apps/com.toast1599.SimplyToast.png"
+
+  # Sanity cleanup
+  find "$pkgdir" -name "__pycache__" -prune -exec rm -rf {} +
+  find "$pkgdir" -name "*.pyc" -delete
 }
