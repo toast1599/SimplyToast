@@ -1,5 +1,5 @@
 pkgname=simplytoast
-pkgver=@VERSION@
+pkgver=0.9.5.4
 pkgrel=1
 pkgdesc="Manage startup and background applications,easier than ever before!"
 arch=(any)
