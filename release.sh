@@ -81,14 +81,20 @@ rsync -a --exclude='__pycache__' --exclude='*.pyc' --exclude='*.AppImage' src/ "
 rsync -a data/ "$BUILD_DIR/artifact/data/"
 tar -czf "$BUILD_DIR/artifact.tar.gz" -C "$BUILD_DIR/artifact" .
 
-sed -i "s/pkgver=.*/pkgver=$VERSION/" "$ARCH_PKG_DIR/PKGBUILD"
-
 # --- ARCH ---
 echo "▶ Building Arch..."
 mkdir -p "$BUILD_DIR/arch"
-cp "$ROOT/packaging/arch/PKGBUILD" "$BUILD_DIR/arch/"
+
+cp "$ROOT/packaging/arch/PKGBUILD" "$BUILD_DIR/arch/PKGBUILD"
 cp "$BUILD_DIR/artifact.tar.gz" "$BUILD_DIR/arch/"
-(cd "$BUILD_DIR/arch" && makepkg -sf --noconfirm && mv *.pkg.tar.zst "$OUT_DIR/")
+
+sed -i "s/^pkgver=.*/pkgver=$VERSION/" "$BUILD_DIR/arch/PKGBUILD"
+
+(
+  cd "$BUILD_DIR/arch"
+  makepkg -sf --noconfirm
+  mv *.pkg.tar.zst "$OUT_DIR/"
+)
 
 # --- DEB ---
 echo "▶ Building DEB..."
