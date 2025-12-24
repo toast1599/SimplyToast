@@ -1,0 +1,10 @@
+Package: simplytoast
+Version: 0.0.0
+Section: utils
+Priority: optional
+Architecture: all
+Maintainer: toast1599 <noreply@github.com>
+Depends: python3, python3-gi, gir1.2-gtk-4.0
+Description: Startup & background application manager
+ SimplyToast is a GTK4-based utility for managing startup
+ and background applications on Linux systems.

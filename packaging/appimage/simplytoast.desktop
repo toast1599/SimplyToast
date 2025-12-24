@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=SimplyToast
+Comment=Startup & background application manager
+Exec=simplytoast
+Icon=com.toast1599.SimplyToast
+Categories=Utility;
+Terminal=false
