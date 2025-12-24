@@ -61,11 +61,9 @@ If it affects the *entire system*, it stays out of the way.
 
 ## 📸 Screenshots
 
-> **Screenshot placeholder #1**  
-> *(Startup application list / overview screen)*
+<img width="1433" height="933" alt="image" src="https://github.com/user-attachments/assets/5e0392ef-a58a-4e6b-9fef-ca762bd4d1b7" />
 
-> **Screenshot placeholder #2**  
-> *(Background process view or resource impact view)*
+<img width="1433" height="933" alt="image" src="https://github.com/user-attachments/assets/68a9dec4-19d5-48be-8866-8c89f6f2184b" />
 
 ---
 
