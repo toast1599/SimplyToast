@@ -112,15 +112,37 @@ func main() {
 	}
 
 	// Prepare dirs
-	run("mkdir", "-p", buildDir, outDir)
+artifactRoot := filepath.Join(
+        buildDir,
+        fmt.Sprintf("%s-%s", AppName, version),
+    )
 
-	artifactDir := filepath.Join(buildDir, "artifact")
-	run("mkdir", "-p", artifactDir)
+    run("mkdir", "-p", artifactRoot)
 
-	fmt.Println("▶ Packing Source...")
-	run("rsync", "-a", "--exclude=__pycache__", "--exclude=*.pyc", "--exclude=*.AppImage", "src/", filepath.Join(artifactDir, "src"))
-	run("rsync", "-a", "data/", filepath.Join(artifactDir, "data"))
-	run("tar", "-czf", filepath.Join(buildDir, "artifact.tar.gz"), "-C", artifactDir, ".")
+    run("rsync", "-a",
+        "--exclude=__pycache__",
+        "--exclude=*.pyc",
+        "--exclude=*.AppImage",
+        "src/",
+        filepath.Join(artifactRoot, "src"),
+    )
+
+    run("rsync", "-a",
+        "data/",
+        filepath.Join(artifactRoot, "data"),
+    )
+
+    tarball := filepath.Join(
+        buildDir,
+        fmt.Sprintf("%s-%s.tar.gz", AppName, version),
+    )
+
+    run(
+        "tar", "-czf",
+        tarball,
+        "-C", buildDir,
+        fmt.Sprintf("%s-%s", AppName, version),
+    )
 
 	// ARCH
 	fmt.Println("▶ Building Arch...")
