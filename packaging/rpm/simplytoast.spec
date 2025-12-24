@@ -1,6 +1,7 @@
 Name:           simplytoast
 Version:        0.0.0
 Release:        1%{?dist}
+%global debug_package %{nil}
 Summary:        Startup & background application manager
 
 License:        GPL-3.0-or-later
