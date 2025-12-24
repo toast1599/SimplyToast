@@ -103,6 +103,8 @@ cp "$BUILD_DIR/artifact.tar.gz" "$ARCH_PKG_DIR/"
 ### -------------------------
 echo "▶ Building DEB package"
 
+mkdir -p "$BUILD_DIR/deb"
+
 cp "$BUILD_DIR/artifact.tar.gz" "$BUILD_DIR/deb/"
 podman run --rm \
   -v "$BUILD_DIR/deb:/build:Z" \
@@ -115,6 +117,8 @@ podman run --rm \
 ### -------------------------
 echo "▶ Building RPM package"
 
+mkdir -p "$BUILD_DIR/rpm"
+
 cp "$BUILD_DIR/artifact.tar.gz" "$BUILD_DIR/rpm/"
 podman run --rm \
   -v "$BUILD_DIR/rpm:/build:Z" \
@@ -126,6 +130,8 @@ podman run --rm \
 ### APPIMAGE (CONTAINER)
 ### -------------------------
 echo "▶ Building AppImage"
+
+mkdir -p "$BUILD_DIR/appimage"
 
 cp "$BUILD_DIR/artifact.tar.gz" "$BUILD_DIR/appimage/"
 podman run --rm \
