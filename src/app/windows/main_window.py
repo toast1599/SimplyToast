@@ -1,3 +1,6 @@
+import logging
+log = logging.getLogger(__name__)
+
 import gi
 gi.require_version("Gtk", "4.0")
 from gi.repository import Gtk, Gdk, GLib
@@ -12,7 +15,7 @@ try:
     from .pages.settings_page import SettingsPage
     from .pages.about_page import AboutPage
 except Exception as e:
-    print("IMPORT ERROR while loading pages:")
+    log.error("Import error while loading pages")
     import traceback
     traceback.print_exc()
     raise
@@ -26,7 +29,7 @@ class ToastWindow(Gtk.Window):
             if hasattr(self, "startup_page"):
                 self.startup_page.refresh()
         except Exception as e:
-            print("Failed to refresh startup page:", e)
+            log.exception("Failed to refresh startup page")
 
     def __init__(self):
         super().__init__(title="SimplyToast")
@@ -175,7 +178,7 @@ class ToastWindow(Gtk.Window):
         try:
             apply_theme(self, self.settings.get("theme"))
         except Exception as e:
-            print('[ERROR] Unhandled exception:', e)
+            log.exception("Unhandled exception")
 
     # -----------------------------------------------------------------
 
@@ -199,7 +202,7 @@ class ToastWindow(Gtk.Window):
             try:
                 page.refresh()
             except Exception as e:
-                print('[ERROR] Unhandled exception:', e)
+                log.exception("Unhandled exception")
 
     def _on_search_changed(self, entry):
         text = entry.get_text().strip().lower()
@@ -208,7 +211,7 @@ class ToastWindow(Gtk.Window):
             if hasattr(visible, "on_search"):
                 visible.on_search(text)
         except Exception as e:
-            print('[ERROR] Unhandled exception:', e)
+            log.exception("Unhandled exception")
 
     def _on_refresh(self):
         for p in (
@@ -221,19 +224,19 @@ class ToastWindow(Gtk.Window):
                 if hasattr(p, "refresh"):
                     p.refresh()
             except Exception as e:
-                print("Error refreshing page:", getattr(p, '__class__', p), e)
+                log.exception("Error refreshing page")
 
     def _on_help(self, _btn):
         try:
             from .help_window import HelpWindow
             HelpWindow(self).present()
         except Exception as e:
-            print('[ERROR] Unhandled exception:', e)
+            log.exception("Unhandled exception")
 
     def _initial_refresh(self):
         try:
             self.startup_page.refresh()
             self.background_page.refresh()
         except Exception as e:
-            print('[ERROR] Unhandled exception:', e)
+            log.exception("Unhandled exception")
         return False

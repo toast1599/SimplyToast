@@ -30,7 +30,7 @@ def parse_desktop_file(filepath):
                 elif line.startswith("Hidden="):
                     enabled = not ("true" in line.lower())
     except Exception as e:
-        print('[ERROR] Unhandled exception:', e)
+        log.exception("Unhandled exception")
 
     return name, comment, icon, enabled
 
@@ -52,11 +52,11 @@ def set_enabled(filepath, enabled):
         atomic_write(filepath, "".join(lines))  
 
     except Exception as e:
-        print('[ERROR] Unhandled exception:', e)
+        log.exception("Unhandled exception")
 
 
 def delete_autostart(filepath):
     try:
         Path(filepath).unlink(missing_ok=True)
     except Exception as e:
-        print('[ERROR] Unhandled exception:', e)
+        log.exception("Unhandled exception")

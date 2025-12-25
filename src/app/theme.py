@@ -21,7 +21,7 @@ def apply_theme(window, theme_name):
         try:
             Gtk.StyleContext.remove_provider_for_display(display, current_provider)
         except Exception as e:
-            print('[ERROR] Unhandled exception:', e)
+            log.exception("Unhandled exception")
 
     provider = Gtk.CssProvider()
     provider.load_from_path(str(css_path))
