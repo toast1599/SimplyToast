@@ -25,6 +25,7 @@ combine_for_llm.sh
 *.AppImage
 *.flatpak
 *.tar.gz
+<<<<<<< HEAD
 
 # --------------------
 # Packaging temp dirs
@@ -34,6 +35,17 @@ packaging/**/pkg/
 packaging/**/src/
 
 # --------------------
+=======
+release.py
+# --------------------
+# Packaging temp dirs
+# --------------------
+rpmbuild/
+packaging/**/pkg/
+packaging/**/src/
+
+# --------------------
+>>>>>>> refactor/background-startup
 # Tooling / Tests
 # --------------------
 .pytest_cache/
