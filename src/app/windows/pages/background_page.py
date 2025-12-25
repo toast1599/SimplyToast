@@ -1,3 +1,6 @@
+import logging
+log = logging.getLogger(__name__)
+
 # src/app/windows/pages/background_page.py
 
 import os
@@ -205,7 +208,7 @@ class BackgroundPage(Gtk.Box):
         try:
             processes = scan_processes()
         except Exception as e:
-            print("Process scan failed:", e)
+            log.exception("Process scan failed")
             return
 
         rows = []
@@ -255,7 +258,7 @@ class BackgroundPage(Gtk.Box):
         try:
             os.kill(row.pid, signal.SIGTERM)
         except Exception as e:
-            print("Kill failed:", e)
+            log.exception("Failed to kill process")
 
     def on_search(self, text):
         q = (text or "").lower().strip()
