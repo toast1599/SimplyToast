@@ -47,11 +47,6 @@ If it affects the *entire system*, it stays out of the way.
 - Designed to highlight *relative* cost, not replace system profilers
 - Helps identify what slows down login over time
 
-### 🎨 Theme Support
-- Light
-- Mid
-- Dark
-
 ### 🔐 Safe by Design
 - Runs entirely as a normal user
 - No root permissions required
@@ -65,6 +60,17 @@ If it affects the *entire system*, it stays out of the way.
 
 <img width="1433" height="933" alt="image" src="https://github.com/user-attachments/assets/68a9dec4-19d5-48be-8866-8c89f6f2184b" />
 
+---
+
+## 🐧 Arch Linux (AUR)
+
+SimplyToast is available on the AUR:
+
+```
+yay -S simplytoast
+# or
+paru -S simplytoast
+```
 ---
 
 ## 📦 Installation
