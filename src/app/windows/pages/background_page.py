@@ -1,53 +1,37 @@
-import logging
-log = logging.getLogger(__name__)
-
 # src/app/windows/pages/background_page.py
 
-import os
-import signal
-from pathlib import Path
+import logging
+log = logging.getLogger(__name__)
 
 import gi
 gi.require_version("Gtk", "4.0")
 from gi.repository import Gtk, Pango, GLib, Gdk
 
-from ...processes import scan_processes
+from ...background.controller import BackgroundController
 
-FALLBACK_ICON = "application-x-executable"
 CPU_COL_WIDTH = 6
 MEM_COL_WIDTH = 6
-
-
-def display_name(comm, cmd):
-    if cmd:
-        exe = cmd.split()[0]
-        if exe.startswith("/"):
-            return Path(exe).name
-        return exe
-    return comm
-
-
-def resolve_icon(name):
-    theme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default())
-
-    candidates = [
-        name,
-        name.lower(),
-        f"{name.lower()}-symbolic",
-        "application-x-executable",
-    ]
-
-    for c in candidates:
-        if theme.has_icon(c):
-            return c
-
-    return "application-x-executable"
 
 
 def short(text, n=90):
     if not text:
         return ""
     return text if len(text) <= n else text[: n - 1] + "…"
+
+
+def resolve_icon(name):
+    theme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default())
+
+    for candidate in (
+        name,
+        name.lower(),
+        f"{name.lower()}-symbolic",
+        "application-x-executable",
+    ):
+        if theme.has_icon(candidate):
+            return candidate
+
+    return "application-x-executable"
 
 
 # ---------------------------------------------------------------------
@@ -61,7 +45,7 @@ class ProcessRow(Gtk.ListBoxRow):
         self.pid = pid
         self.name = name
         self.cmd = cmd
-        self.on_kill = on_kill
+        self._on_kill = on_kill
 
         box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         box.set_margin_top(6)
@@ -69,12 +53,10 @@ class ProcessRow(Gtk.ListBoxRow):
         box.set_margin_start(8)
         box.set_margin_end(8)
 
-        # icon
         icon = Gtk.Image.new_from_icon_name(resolve_icon(name))
         icon.set_pixel_size(20)
         box.append(icon)
 
-        # name + cmd
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
 
         lbl_name = Gtk.Label(label=name, xalign=0)
@@ -88,19 +70,16 @@ class ProcessRow(Gtk.ListBoxRow):
         vbox.append(lbl_cmd)
         box.append(vbox)
 
-        # spacer
         spacer = Gtk.Box()
         spacer.set_hexpand(True)
         box.append(spacer)
 
-        # kill button
         btn_kill = Gtk.Button()
         btn_kill.set_child(Gtk.Image.new_from_icon_name("process-stop-symbolic"))
         btn_kill.set_tooltip_text("Terminate this process (SIGTERM)")
-        btn_kill.connect("clicked", lambda *_: self.on_kill(self))
+        btn_kill.connect("clicked", lambda *_: self._on_kill(self.pid))
         box.append(btn_kill)
 
-        # cpu / mem
         self.lbl_cpu = Gtk.Label(label=f"{cpu:.1f}%", xalign=1)
         self.lbl_mem = Gtk.Label(label=f"{mem:.1f}%", xalign=1)
 
@@ -124,7 +103,9 @@ class ProcessRow(Gtk.ListBoxRow):
 class BackgroundPage(Gtk.Box):
     def __init__(self, parent):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+
         self.parent = parent
+        self.controller = BackgroundController(self)
 
         self.set_margin_top(8)
         self.set_margin_bottom(8)
@@ -145,31 +126,15 @@ class BackgroundPage(Gtk.Box):
         header.set_margin_start(8)
         header.set_margin_end(8)
 
-        header.append(Gtk.Label(label="", xalign=0))  # icon column
-
-        lbl_process = Gtk.Label(label="Process", xalign=0)
-        lbl_process.set_hexpand(True)
-        header.append(lbl_process)
-
-        lbl_kill = Gtk.Label(label="KILL", xalign=1)
-        lbl_kill.set_width_chars(4)
-        lbl_kill.set_tooltip_text("Terminate the process")
-        header.append(lbl_kill)
-
-        lbl_cpu_h = Gtk.Label(label="CPU %", xalign=1)
-        lbl_cpu_h.set_width_chars(6)
-        header.append(lbl_cpu_h)
-
-        lbl_mem_h = Gtk.Label(label="RAM %", xalign=1)
-        lbl_mem_h.set_width_chars(6)
-        header.append(lbl_mem_h)
+        header.append(Gtk.Label(label="", xalign=0))
+        header.append(Gtk.Label(label="Process", xalign=0, hexpand=True))
+        header.append(Gtk.Label(label="KILL", xalign=1, width_chars=4))
+        header.append(Gtk.Label(label="CPU %", xalign=1, width_chars=6))
+        header.append(Gtk.Label(label="RAM %", xalign=1, width_chars=6))
 
         self.append(header)
 
-        sc = Gtk.ScrolledWindow()
-        sc.set_hexpand(True)
-        sc.set_vexpand(True)
-
+        sc = Gtk.ScrolledWindow(hexpand=True, vexpand=True)
         self.listbox = Gtk.ListBox()
         sc.set_child(self.listbox)
         self.append(sc)
@@ -177,21 +142,20 @@ class BackgroundPage(Gtk.Box):
         self._rows_by_pid = {}
         self._active = True
 
-        GLib.idle_add(self.refresh)
         self._refresh_source = None
         self._start_timer()
 
-    # -----------------------------------------------------------------
+        GLib.idle_add(self.refresh)
+
+    # --------------------------------------------------------------
 
     def _start_timer(self):
         self._stop_timer()
-
         interval_ms = self.parent.settings.get("refresh_interval_ms", 3000)
-
         self._refresh_source = GLib.timeout_add(interval_ms, self._tick)
 
     def _stop_timer(self):
-        if self._refresh_source is not None:
+        if self._refresh_source:
             GLib.source_remove(self._refresh_source)
             self._refresh_source = None
 
@@ -204,33 +168,15 @@ class BackgroundPage(Gtk.Box):
 
         return True
 
+    # --------------------------------------------------------------
+
     def refresh(self):
-        try:
-            processes = scan_processes()
-        except Exception as e:
-            log.exception("Process scan failed")
-            return
+        self.controller.refresh()
 
-        rows = []
-
-        for p in processes:
-            try:
-                pid = int(p[0])
-                comm = str(p[1])
-                cpu = float(p[2])
-                mem = float(p[3])
-                cmd = str(p[4])
-            except Exception:
-                continue
-
-            if cmd.startswith("[") and cmd.endswith("]"):
-                continue
-
-            name = display_name(comm, cmd)
-            rows.append((pid, name, cpu, mem, cmd))
-
-        rows.sort(key=lambda r: r[2], reverse=True)
-
+    def render(self, rows):
+        """
+        rows: list[(pid, name, cpu, mem, cmd)]
+        """
         seen = set()
 
         for pid, name, cpu, mem, cmd in rows:
@@ -254,15 +200,11 @@ class BackgroundPage(Gtk.Box):
             if pid not in seen:
                 self.listbox.remove(self._rows_by_pid.pop(pid))
 
-    def _kill_process(self, row):
-        try:
-            os.kill(row.pid, signal.SIGTERM)
-        except Exception as e:
-            log.exception("Failed to kill process")
+    def _kill_process(self, pid):
+        self.controller.kill(pid)
 
     def on_search(self, text):
         q = (text or "").lower().strip()
-
         row = self.listbox.get_first_child()
         while row:
             row.set_visible(
