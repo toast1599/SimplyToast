@@ -75,3 +75,4 @@ Containerfile
 Containerfile.*
 **/Containerfile
 **/Containerfile.*
+.shellscripts/
