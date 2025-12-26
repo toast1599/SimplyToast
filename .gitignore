@@ -61,3 +61,17 @@ py_only.zip
 usr/
 grep
 simplytoast-processes
+
+# Docker files
+Dockerfile
+docker-compose.yml
+docker-compose.yaml
+
+# Docker folders (if any)
+.docker/
+
+# Podman / Docker
+Containerfile
+Containerfile.*
+**/Containerfile
+**/Containerfile.*
