@@ -1,7 +1,5 @@
 # app/background/model.py
 
-import os
-import signal
 from pathlib import Path
 
 from app.processes import scan_processes
@@ -31,14 +29,17 @@ def load_processes():
     rows.sort(key=lambda r: r[2], reverse=True)
     return rows
 
+import subprocess
 
 def kill_process(pid: int):
-    try:
-        os.kill(pid, signal.SIGTERM)
-    except PermissionError:
-        log.warning(f"No permission to kill PID {pid}")
-    except ProcessLookupError:
-        log.info(f"PID {pid} already exited")
+    result = subprocess.run(
+        ["simplytoast-kill", str(pid)],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+
+    if result.returncode != 0:
+        log.warning(f"Failed to stop PID {pid}")
 
 def _display_name(comm, cmd):
     if cmd:
