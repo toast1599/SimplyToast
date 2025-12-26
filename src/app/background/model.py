@@ -33,8 +33,12 @@ def load_processes():
 
 
 def kill_process(pid: int):
-    os.kill(pid, signal.SIGTERM)
-
+    try:
+        os.kill(pid, signal.SIGTERM)
+    except PermissionError:
+        log.warning(f"No permission to kill PID {pid}")
+    except ProcessLookupError:
+        log.info(f"PID {pid} already exited")
 
 def _display_name(comm, cmd):
     if cmd:

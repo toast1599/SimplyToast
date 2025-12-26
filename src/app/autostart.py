@@ -1,5 +1,9 @@
 from pathlib import Path
 from .config import AUTOSTART_USER, AUTOSTART_SYSTEM
+from .log import get_logger
+from configparser import ConfigParser
+
+log = get_logger(__name__)
 
 def scan_autostart():
     entries = []
