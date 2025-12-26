@@ -7,6 +7,8 @@ from gi.repository import Gtk
 import sys
 from pathlib import Path
 
+from app.utils.fs import atomic_write
+
 # Ensure src/ is on PYTHONPATH when running directly
 ROOT = Path(__file__).resolve().parent
 if str(ROOT) not in sys.path:
