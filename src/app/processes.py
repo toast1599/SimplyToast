@@ -2,11 +2,11 @@
 import subprocess
 from pathlib import Path
 import shlex
+import json
 
 from .log import get_logger
 
 log = get_logger(__name__)
-
 
 def scan_processes():
     """
@@ -15,38 +15,24 @@ def scan_processes():
     """
     try:
         out = subprocess.check_output(
-            ["ps", "-eo", "pid,comm,%cpu,%mem,args", "--no-headers"],
+            ["simplytoast-processes", "scan"],
             text=True,
             stderr=subprocess.DEVNULL,
         )
     except Exception as e:
-        log.error("Failed to execute ps", exc_info=e)
+        log.error("Failed to execute simplytoast-processes", exc_info=e)
         return []
 
-    rows = []
+    try:
+        rows = json.loads(out)
+    except Exception as e:
+        log.error("Failed to parse process JSON", exc_info=e)
+        return []
 
-    for line in out.splitlines():
-        parts = line.strip().split(None, 4)
-        if len(parts) < 5:
-            continue
-
-        try:
-            pid = int(parts[0])
-            name = parts[1]
-            cpu = float(parts[2])
-            mem = float(parts[3])
-            cmd = parts[4]
-        except Exception:
-            # malformed line — ignore safely
-            continue
-
-        # Filter kernel threads ONLY (they look like "[kworker/0:1]")
-        if cmd.startswith("[") and cmd.endswith("]"):
-            continue
-
-        rows.append((pid, name, cpu, mem, cmd))
-
-    return rows
+    return [
+        (int(pid), str(name), float(cpu), float(mem), str(cmd))
+        for pid, name, cpu, mem, cmd in rows
+    ]
 
 
 # --------------------------------------------------------------------

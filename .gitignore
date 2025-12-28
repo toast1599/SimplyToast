@@ -82,3 +82,4 @@ Containerfile.*
 .shellscripts/
 test.txt
 linuxdeploy-x86_64.AppImage*
+packaging/
