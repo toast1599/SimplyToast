@@ -18,7 +18,7 @@ class StartupController:
         rows = []
         for entry in self.entries:
             impact = impacts.get(entry, 0.0)
-            label, color = impact_level(impact, max_impact)
+            label, color = impact_level(impact, max_impact, entry)
 
             rows.append(
                 {
@@ -30,7 +30,7 @@ class StartupController:
             )
 
         rows.sort(
-            key=lambda r: impact_sort_key(r["impact"], max_impact)
+            key=lambda r: impact_sort_key(r["impact"], max_impact, r["entry"])
         )
 
         self.view.render(rows)

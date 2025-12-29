@@ -64,18 +64,26 @@ class AutostartRow(Gtk.ListBoxRow):
         spacer = Gtk.Box()
         spacer.set_hexpand(True)
         box.append(spacer)
-
         impact = Gtk.Label(xalign=1.0)
+
         if self.impact_label and self.impact_color:
+            # High / Medium / Low
             impact.set_markup(
                 f"<span foreground='{self.impact_color}'><b>{self.impact_label}</b></span>"
             )
+            impact.set_tooltip_text(
+                "Estimated startup impact based on observed CPU and memory usage."
+            )
         else:
-            impact.set_text("—")
+            # None / N/A
+            impact.set_markup(
+                "<span foreground='gray'><i>None</i></span>"
+            )
+            impact.set_tooltip_text(
+                "No measurable startup impact detected.\n"
+                "The app may not be running or has no CPU/RAM usage."
+            )
 
-        impact.set_tooltip_text(
-            "Estimated impact (heuristic, relative — not a boot-time measurement.)"
-        )
         box.append(impact)
 
         sw = Gtk.Switch()
