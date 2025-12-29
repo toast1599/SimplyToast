@@ -14,28 +14,34 @@ from .model import AutostartEntry
 from shutil import which
 
 _IMPACT_BIN = (
-    which("simplytoast-impact")
+    which("simplytoast-core")
     or str(
         Path(__file__).resolve()
-        .parents[3] / "tools" / "simplytoast-impact" / "target" / "release" / "simplytoast-impact"
+        .parents[3]
+        / "tools"
+        / "simplytoast-core"
+        / "target"
+        / "debug"
+        / "simplytoast-core"
     )
 )
 
-
 def _run_impact_engine(payload: dict) -> dict:
-    try:
-        proc = subprocess.run(
-            [_IMPACT_BIN],
+    proc = subprocess.run(
+        [_IMPACT_BIN, "impact"],
             input=json.dumps(payload),
-            text=True,
-            capture_output=True,
-            check=True,
-        )
-        return json.loads(proc.stdout)
-    except Exception:
-        # Fail safe: no crash, no impact
+        text=True,
+        capture_output=True,
+        check=True,
+    )
+
+    if proc.stderr:
+        print("RUST STDERR:", proc.stderr, flush=True)
+
+    if proc.returncode != 0:
         return {}
 
+    return json.loads(proc.stdout)
 
 def compute_impacts(entries: list[AutostartEntry]) -> dict[AutostartEntry, float]:
     processes = scan_processes()
