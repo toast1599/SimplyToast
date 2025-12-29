@@ -9,8 +9,6 @@ import (
 	"strings"
 )
 
-const USER_HZ = 100.0
-
 func main() {
 	if len(os.Args) < 2 || os.Args[1] != "scan" {
 		fmt.Fprintln(os.Stderr, "usage: simplytoast-processes scan")
@@ -25,7 +23,7 @@ func main() {
 }
 
 // scanProcesses returns:
-// [pid:int, name:str, cpu:float, mem:float, cmd:str]
+// [pid:int, name:str, procTime:float, mem:float, cmd:str]
 func scanProcesses() [][]any {
 	entries, err := os.ReadDir("/proc")
 	if err != nil {
@@ -33,7 +31,6 @@ func scanProcesses() [][]any {
 	}
 
 	totalMemKB := readTotalMemoryKB()
-	uptime := readUptimeSeconds()
 
 	out := make([][]any, 0, 256)
 
@@ -65,14 +62,13 @@ func scanProcesses() [][]any {
 
 		exe := filepath.Base(fields[0])
 
-		procTime, startTime := readProcessTimes(e.Name())
-		cpu := computeCPU(procTime, startTime, uptime)
+		procTime := readProcessTime(e.Name())
 		mem := readProcessMemPercent(e.Name(), totalMemKB)
 
 		out = append(out, []any{
 			pid,
 			exe,
-			cpu,
+			procTime, // utime + stime (jiffies)
 			mem,
 			cmd,
 		})
@@ -103,56 +99,22 @@ func readTotalMemoryKB() float64 {
 	return 0
 }
 
-// /proc/uptime → seconds
-func readUptimeSeconds() float64 {
-	data, err := os.ReadFile("/proc/uptime")
+// utime + stime (in jiffies)
+func readProcessTime(pid string) float64 {
+	stat, err := os.ReadFile(filepath.Join("/proc", pid, "stat"))
 	if err != nil {
 		return 0
 	}
-	fields := strings.Fields(string(data))
-	if len(fields) > 0 {
-		if v, err := strconv.ParseFloat(fields[0], 64); err == nil {
-			return v
-		}
-	}
-	return 0
-}
-
-// utime + stime, starttime (in jiffies)
-func readProcessTimes(pid string) (float64, float64) {
-	stat, err := os.ReadFile(filepath.Join("/proc", pid, "stat"))
-	if err != nil {
-		return 0, 0
-	}
 
 	fields := strings.Fields(string(stat))
-	if len(fields) < 22 {
-		return 0, 0
+	if len(fields) < 15 {
+		return 0
 	}
 
 	utime, _ := strconv.ParseFloat(fields[13], 64)
 	stime, _ := strconv.ParseFloat(fields[14], 64)
-	starttime, _ := strconv.ParseFloat(fields[21], 64)
 
-	return utime + stime, starttime
-}
-
-// Stateless CPU %
-func computeCPU(procTime, startTime, uptime float64) float64 {
-	if uptime <= 0 || startTime <= 0 {
-		return 0
-	}
-
-	// process lifetime in seconds
-	elapsed := uptime - (startTime / USER_HZ)
-	if elapsed <= 0 {
-		return 0
-	}
-
-	// total CPU time in seconds
-	cpuSeconds := procTime / USER_HZ
-
-	return (cpuSeconds / elapsed) * 100.0
+	return utime + stime
 }
 
 // VmRSS / MemTotal
