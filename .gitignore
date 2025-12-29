@@ -33,7 +33,7 @@ combine_for_llm.sh
 rpmbuild/
 packaging/**/pkg/
 packaging/**/src/
-
+packaging/
 # --------------------
 =======
 release.py
