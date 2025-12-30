@@ -14,13 +14,14 @@ typedef struct {
 import "C"
 
 import (
-	"encoding/json"
-	"fmt"
-	"os"
-	"path/filepath"
-	"strconv"
-	"strings"
-	"unsafe"
+    "encoding/json"
+    "fmt"
+    "os"
+    "path/filepath"
+    "sort"
+    "strconv"
+    "strings"
+    "unsafe"
 )
 
 func main() {
@@ -141,6 +142,10 @@ func scanProcesses() [][]any {
 			cmd,
 		})
 	}
+
+	sort.Slice(out, func(i, j int) bool {
+    return out[i][2].(float64) > out[j][2].(float64)
+	})
 
 	return out
 }
