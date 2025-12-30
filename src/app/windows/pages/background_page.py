@@ -129,7 +129,15 @@ class BackgroundPage(Gtk.Box):
         header.append(Gtk.Label(label="", xalign=0))
         header.append(Gtk.Label(label="Process", xalign=0, hexpand=True))
         header.append(Gtk.Label(label="KILL", xalign=1, width_chars=4))
-        header.append(Gtk.Label(label="CPU %", xalign=1, width_chars=6))
+        lbl_cpu = Gtk.Label(xalign=1, width_chars=6)
+        lbl_cpu = Gtk.Label(xalign=1, width_chars=6)
+        lbl_cpu.set_markup("CPU<span foreground='#FF8000'><b>*</b></span>")
+        lbl_cpu.set_tooltip_text(
+            "Relative CPU usage based on recent process activity.\n"
+            "Useful for comparison, not exact percentages."
+        )
+        header.append(lbl_cpu)
+
         header.append(Gtk.Label(label="RAM %", xalign=1, width_chars=6))
 
         self.append(header)
