@@ -8,6 +8,17 @@ from .log import get_logger
 
 log = get_logger(__name__)
 
+from pathlib import Path
+import ctypes
+
+ROOT = Path(__file__).resolve().parent.parent
+LIB_PATH = ROOT / "libsimplytoast_processes.so"
+
+if not LIB_PATH.exists():
+    raise RuntimeError(f"Missing native library: {LIB_PATH}")
+import os
+_lib = ctypes.CDLL(str(LIB_PATH), mode=os.RTLD_NOW)
+
 def scan_processes():
     """
     Returns processes as:

@@ -1,5 +1,18 @@
 package main
 
+/*
+#include <stdlib.h>
+
+typedef struct {
+    int pid;
+    double cpu;
+    double mem;
+    char* name;
+    char* cmd;
+} ProcessRow;
+*/
+import "C"
+
 import (
 	"encoding/json"
 	"fmt"
@@ -7,6 +20,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"unsafe"
 )
 
 func main() {
@@ -22,6 +36,61 @@ func main() {
 	_ = enc.Encode(rows)
 }
 
+// ------------------------------------------------------------
+// FFI EXPORTS
+// ------------------------------------------------------------
+
+//export ScanProcesses
+func ScanProcesses(count *C.int) *C.ProcessRow {
+	rows := scanProcesses()
+	n := len(rows)
+
+	*count = C.int(n)
+	if n == 0 {
+		return nil
+	}
+
+	mem := C.malloc(C.size_t(n) * C.size_t(C.sizeof_ProcessRow))
+	if mem == nil {
+		*count = 0
+		return nil
+	}
+
+	arr := (*[1 << 30]C.ProcessRow)(mem)
+
+	for i, r := range rows {
+		arr[i] = C.ProcessRow{
+			pid:  C.int(r[0].(int)),
+			name: C.CString(r[1].(string)),
+			cpu:  C.double(r[2].(float64)),
+			mem:  C.double(r[3].(float64)),
+			cmd:  C.CString(r[4].(string)),
+		}
+	}
+
+	return (*C.ProcessRow)(mem)
+}
+
+//export FreeProcesses
+func FreeProcesses(rows *C.ProcessRow, count C.int) {
+	if rows == nil || count <= 0 {
+		return
+	}
+
+	arr := (*[1 << 30]C.ProcessRow)(unsafe.Pointer(rows))
+
+	for i := 0; i < int(count); i++ {
+		C.free(unsafe.Pointer(arr[i].name))
+		C.free(unsafe.Pointer(arr[i].cmd))
+	}
+
+	C.free(unsafe.Pointer(rows))
+}
+
+// ------------------------------------------------------------
+// CORE LOGIC (UNCHANGED)
+// ------------------------------------------------------------
+
 // scanProcesses returns:
 // [pid:int, name:str, procTime:float, mem:float, cmd:str]
 func scanProcesses() [][]any {
@@ -31,7 +100,6 @@ func scanProcesses() [][]any {
 	}
 
 	totalMemKB := readTotalMemoryKB()
-
 	out := make([][]any, 0, 256)
 
 	for _, e := range entries {
@@ -68,7 +136,7 @@ func scanProcesses() [][]any {
 		out = append(out, []any{
 			pid,
 			exe,
-			procTime, // utime + stime (jiffies)
+			procTime,
 			mem,
 			cmd,
 		})
@@ -77,7 +145,9 @@ func scanProcesses() [][]any {
 	return out
 }
 
-// ---------------- helpers ----------------
+// ------------------------------------------------------------
+// HELPERS
+// ------------------------------------------------------------
 
 // /proc/meminfo → MemTotal (kB)
 func readTotalMemoryKB() float64 {

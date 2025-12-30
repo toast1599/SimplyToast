@@ -9,8 +9,10 @@ from pathlib import Path
 
 # Ensure src/ is on PYTHONPATH when running directly
 ROOT = Path(__file__).resolve().parent
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
+APP_ROOT = ROOT / "app"
+
+sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(APP_ROOT))
 
 from app.windows.main_window import ToastWindow
 
