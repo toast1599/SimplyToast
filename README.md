@@ -1,6 +1,8 @@
 # SimplyToast  
 <img align="right" src="https://raw.githubusercontent.com/toast1599/SimplyToast/main/assets/logo.png" width="120">
 
+![Languages](https://github-readme-stats.vercel.app/api/top-langs/?username=toast1599&repo=SimplyToast&layout=compact&langs_count=5)
+
 **SimplyToast** is a lightweight GTK4 application for managing **user-level startup applications and background processes** on Linux — without root access, system-wide changes, or hidden magic.
 
 It’s designed for people who want **visibility and control** over what runs in their session, without touching system services or writing `.desktop` files by hand.
@@ -66,11 +68,10 @@ If it affects the *entire system*, it stays out of the way.
 
 SimplyToast is available on the AUR:
 
-```
-yay -S simplytoast
-# or
-paru -S simplytoast
-```
+    yay -S simplytoast
+    # or
+    paru -S simplytoast
+
 ---
 
 ## 📦 Installation
@@ -95,11 +96,9 @@ AppImage is best for testing or portable use.
 
 This is intended for development and testing — not required for normal use.
 
-```
-git clone https://github.com/toast1599/SimplyToast  
-cd SimplyToast  
-python3 src/main.py
-```
+    git clone https://github.com/toast1599/SimplyToast
+    cd SimplyToast
+    python3 src/main.py
 
 GTK4 must be available on your system.
 
