@@ -1,137 +1,84 @@
 # SimplyToast  
 <img align="right" src="https://raw.githubusercontent.com/toast1599/SimplyToast/main/assets/logo.png" width="120">
 
-![Languages](https://github-readme-stats.vercel.app/api/top-langs/?username=toast1599&repo=SimplyToast&layout=compact&langs_count=5)
+**SimplyToast** is a lightweight GTK4 utility for managing user-level startup applications and background processes on Linux. It provides a clean interface for session management without requiring root access or manual editing of `.desktop` files.
 
-**SimplyToast** is a lightweight GTK4 application for managing **user-level startup applications and background processes** on Linux — without root access, system-wide changes, or hidden magic.
-
-It’s designed for people who want **visibility and control** over what runs in their session, without touching system services or writing `.desktop` files by hand.
-
-Created and maintained by **@toast1599**  
-Licensed under **GPL-3.0**
+Created and maintained by **@toast1599** | Licensed under **GPL-3.0**
 
 ---
 
-## 🚀 Overview
+## Overview
 
-SimplyToast focuses on one problem and stays in its lane:
+SimplyToast is designed to give you visibility into your login session. It focuses on:
 
-- Managing **user startup applications**
-- Inspecting **session-level background processes**
-- Understanding **resource impact at login**
-- Making changes safely, without root
+* **User Autostart:** Managing entries in standard XDG autostart locations.
+* **Session Processes:** Inspecting background apps running under your current user.
+* **Resource Impact:** Understanding which apps contribute to login delay.
+* **User-Space Safety:** No systemd manipulation, no root permissions, and no system-wide changes.
 
-**What it does NOT do:**
-- ❌ No system services
-- ❌ No root access
-- ❌ No systemd unit manipulation
-- ❌ No kernel-level monitoring
+If it affects your personal session, SimplyToast handles it. If it’s a system-level service, it stays out of the way.
 
-If it affects your *user session*, SimplyToast cares.  
-If it affects the *entire system*, it stays out of the way.
+## Key Features
 
----
+### Startup Management
+Enable, disable, or edit your autostart entries via a GUI. It follows XDG standards, so changes are transparent and compatible with most desktop environments.
 
-## ✨ Features
+### Background Visibility
+View running processes specifically relevant to your user session. This is designed to highlight startup-related background apps rather than acting as a full-system process manager.
 
-### 🔧 Startup Application Management
-- Enable, disable, or edit user autostart entries
-- Uses standard XDG autostart locations
-- No manual file editing required
+### Impact Estimation
+Startup entries are assigned a relative "impact score" based on CPU and memory usage. This helps you identify which apps are actually slowing down your login over time.
 
-### 📊 Background Process Visibility
-- View running **user-session processes**
-- See CPU and RAM usage relevant to your session
-- Focused on startup-related background apps, not full system monitoring
-
-### ⚡ Resource Impact Estimation
-- Startup entries receive an **impact score** based on observed CPU and memory usage
-- Designed to highlight *relative* cost, not replace system profilers
-- Helps identify what slows down login over time
-
-### 🔐 Safe by Design
-- Runs entirely as a normal user
-- No root permissions required
-- No system configuration files modified
+### Zero-Root Design
+The app runs entirely with user permissions. It does not modify system configuration files or require `sudo` to function.
 
 ---
 
-## 📸 Screenshots
+## Installation
 
-<img width="1433" height="933" alt="image" src="https://github.com/user-attachments/assets/5e0392ef-a58a-4e6b-9fef-ca762bd4d1b7" />
+### Arch Linux (AUR)
+You can install SimplyToast using an AUR helper:
 
-<img width="1433" height="933" alt="image" src="https://github.com/user-attachments/assets/68a9dec4-19d5-48be-8866-8c89f6f2184b" />
+```bash
+yay -S simplytoast
+# or
+paru -S simplytoast
+```
 
----
-
-## 🐧 Arch Linux (AUR)
-
-SimplyToast is available on the AUR:
-
-    yay -S simplytoast
-    # or
-    paru -S simplytoast
-
----
-
-## 📦 Installation
-
-### Recommended: Prebuilt Binaries
-
-Download the latest release here:  
-👉 https://github.com/toast1599/SimplyToast/releases
-
-Available formats:
-- **Arch Linux / AUR** (.pkg.tar.zst)
-- **Debian / Ubuntu / Mint** (.deb)
-- **Fedora / RPM-based distros** (.rpm)
-- **AppImage** (portable, most distros)
-
-If your distro supports native packages, use those first.  
-AppImage is best for testing or portable use.
+### Binary Packages
+Prebuilt binaries are available on the [Releases](https://github.com/toast1599/SimplyToast/releases) page:
+* **Debian / Ubuntu / Mint** (.deb)
+* **Fedora / RPM distros** (.rpm)
+* **AppImage** (Universal/Portable)
 
 ---
 
-## 🛠 Running from Source (Development)
+## Development
 
-This is intended for development and testing — not required for normal use.
+To run from source for testing or development:
 
-    git clone https://github.com/toast1599/SimplyToast
-    cd SimplyToast
-    python3 src/main.py
-
-GTK4 must be available on your system.
-
----
-
-## 🧭 Project Scope & Philosophy
-
-SimplyToast intentionally avoids becoming:
-- a system monitor
-- a service manager
-- a systemd frontend
-
-There are already excellent tools for those jobs.
-
-The goal here is **clarity at startup**:
-- What launches with my session?
-- What keeps running?
-- What actually costs resources?
-
-Nothing more, nothing less.
+```bash
+git clone [https://github.com/toast1599/SimplyToast](https://github.com/toast1599/SimplyToast)
+cd SimplyToast
+python3 src/main.py
+```
+*Note: Ensure GTK4 libraries are installed on your system.*
 
 ---
 
-## 💬 Community & Support
+## Philosophy
 
-- Discord: https://discord.gg/yX92vzqvwd
-- Issues & feature requests: GitHub Issues
+SimplyToast intentionally avoids feature creep. It is not a system monitor or a systemd frontend. There are already excellent tools for those tasks. 
 
-If something feels unsafe, unclear, or misleading — that’s a bug.
+This tool exists to answer three simple questions:
+1. What launches when I log in?
+2. Is it still running?
+3. What is it costing my system?
 
 ---
 
-## 📄 License
+## Community
 
-SimplyToast is licensed under the **GNU GPL-3.0**.  
-You are free to use, modify, and redistribute it under the terms of the license.
+* **Discord:** [Join the server](https://discord.gg/yX92vzqvwd)
+* **Issues:** Report bugs or request features via [GitHub Issues](https://github.com/toast1599/SimplyToast/issues)
+* 
